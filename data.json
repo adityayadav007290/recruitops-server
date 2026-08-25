@@ -1,0 +1,338 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password": "admin123",
+      "role": "superadmin",
+      "name": "Admin"
+    },
+    {
+      "username": "priya",
+      "password": "demo123",
+      "role": "head",
+      "name": "Priya Sharma"
+    },
+    {
+      "username": "vikram",
+      "password": "demo123",
+      "role": "teamlead",
+      "name": "Vikram Rao"
+    },
+    {
+      "username": "rahul",
+      "password": "demo123",
+      "role": "recruiter",
+      "name": "Rahul Mehta"
+    },
+    {
+      "username": "anjali",
+      "password": "demo123",
+      "role": "recruiter",
+      "name": "Anjali Nair"
+    },
+    {
+      "username": "sanjay",
+      "password": "demo123",
+      "role": "salesam",
+      "name": "Sanjay Gupta"
+    },
+    {
+      "username": "neha",
+      "password": "demo123",
+      "role": "management",
+      "name": "Neha Kapoor"
+    }
+  ],
+  "clients": [
+    {
+      "id": "cl_1",
+      "name": "Orbit Financial Services",
+      "contact": "Meera Iyer · meera@orbitfs.com"
+    },
+    {
+      "id": "cl_2",
+      "name": "Northgate Retail",
+      "contact": "Karan Bedi · karan@northgate.com"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "rq_1",
+      "clientId": "cl_1",
+      "title": "Senior Java Backend Engineer",
+      "positions": 3,
+      "status": "Open",
+      "priority": "High",
+      "openedDate": "2026-07-14",
+      "skills": "Java, Spring Boot, Microservices"
+    },
+    {
+      "id": "rq_2",
+      "clientId": "cl_1",
+      "title": "QA Automation Lead",
+      "positions": 1,
+      "status": "Open",
+      "priority": "Medium",
+      "openedDate": "2026-08-09",
+      "skills": "Selenium, Java, CI/CD"
+    },
+    {
+      "id": "rq_3",
+      "clientId": "cl_2",
+      "title": "Store Operations Manager",
+      "positions": 2,
+      "status": "Open",
+      "priority": "High",
+      "openedDate": "2026-08-17",
+      "skills": "Retail Ops, Team Management"
+    },
+    {
+      "id": "rq_4",
+      "clientId": "cl_2",
+      "title": "Data Analyst",
+      "positions": 1,
+      "status": "Closed",
+      "priority": "Low",
+      "openedDate": "2026-06-22",
+      "skills": "SQL, Excel, Power BI"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "cd_1",
+      "name": "Ananya Verma",
+      "email": "ananya.verma@mail.com",
+      "phone": "9820011223",
+      "skills": "Java, Spring Boot",
+      "source": "LinkedIn"
+    },
+    {
+      "id": "cd_2",
+      "name": "Rohit Sinha",
+      "email": "rohit.sinha@mail.com",
+      "phone": "9820011224",
+      "skills": "Java, Microservices",
+      "source": "Referral"
+    },
+    {
+      "id": "cd_3",
+      "name": "Fatima Sheikh",
+      "email": "fatima.sheikh@mail.com",
+      "phone": "9820011225",
+      "skills": "Selenium, Java",
+      "source": "Naukri"
+    },
+    {
+      "id": "cd_4",
+      "name": "Karthik Iyer",
+      "email": "karthik.iyer@mail.com",
+      "phone": "9820011226",
+      "skills": "Retail Ops",
+      "source": "LinkedIn"
+    },
+    {
+      "id": "cd_5",
+      "name": "Sneha Reddy",
+      "email": "sneha.reddy@mail.com",
+      "phone": "9820011227",
+      "skills": "Store Management",
+      "source": "Referral"
+    },
+    {
+      "id": "cd_6",
+      "name": "Manoj Tiwari",
+      "email": "manoj.tiwari@mail.com",
+      "phone": "9820011228",
+      "skills": "Java, AWS",
+      "source": "Naukri"
+    },
+    {
+      "id": "cd_mt8arfrjvds6j",
+      "name": "xyz",
+      "email": "xyz@gmail.com",
+      "phone": "1234567890",
+      "skills": "java",
+      "source": "Naukri"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "sb_1",
+      "candidateId": "cd_1",
+      "requirementId": "rq_1",
+      "recruiter": "rahul",
+      "stage": "Interview",
+      "createdAt": "2026-08-01",
+      "updatedAt": "2026-08-18"
+    },
+    {
+      "id": "sb_2",
+      "candidateId": "cd_2",
+      "requirementId": "rq_1",
+      "recruiter": "rahul",
+      "stage": "Offer",
+      "createdAt": "2026-07-27",
+      "updatedAt": "2026-08-20"
+    },
+    {
+      "id": "sb_3",
+      "candidateId": "cd_6",
+      "requirementId": "rq_1",
+      "recruiter": "anjali",
+      "stage": "Submitted",
+      "createdAt": "2026-08-15",
+      "updatedAt": "2026-08-15"
+    },
+    {
+      "id": "sb_4",
+      "candidateId": "cd_3",
+      "requirementId": "rq_2",
+      "recruiter": "anjali",
+      "stage": "Screened",
+      "createdAt": "2026-08-17",
+      "updatedAt": "2026-08-17"
+    },
+    {
+      "id": "sb_5",
+      "candidateId": "cd_4",
+      "requirementId": "rq_3",
+      "recruiter": "rahul",
+      "stage": "Joined",
+      "createdAt": "2026-07-22",
+      "updatedAt": "2026-08-19"
+    },
+    {
+      "id": "sb_6",
+      "candidateId": "cd_5",
+      "requirementId": "rq_3",
+      "recruiter": "anjali",
+      "stage": "Sourced",
+      "createdAt": "2026-08-19",
+      "updatedAt": "2026-08-19"
+    }
+  ],
+  "interviews": [
+    {
+      "id": "iv_1",
+      "submissionId": "sb_1",
+      "round": "L1 - Technical",
+      "date": "2026-08-18",
+      "interviewer": "Client Panel",
+      "status": "Completed",
+      "outcome": "Next Round",
+      "feedback": "Strong on core Java, needs system design push."
+    }
+  ],
+  "offers": [
+    {
+      "id": "of_1",
+      "submissionId": "sb_2",
+      "ctc": "₹18,50,000",
+      "joiningDate": "2026-09-11",
+      "status": "Extended",
+      "extendedDate": "2026-08-20"
+    }
+  ],
+  "joinings": [
+    {
+      "id": "jn_1",
+      "submissionId": "sb_5",
+      "actualDate": "2026-08-19",
+      "status": "Joined"
+    }
+  ],
+  "activity": [
+    {
+      "id": "ac_mt8arfrjqa7y6",
+      "candidateId": "cd_mt8arfrjvds6j",
+      "ts": "2026-08-25T06:41:43.567Z",
+      "actor": "admin",
+      "text": "Candidate added to database."
+    },
+    {
+      "id": "ac_mt2ngfsa1vrsu",
+      "candidateId": "cd_1",
+      "ts": "2026-08-01",
+      "actor": "rahul",
+      "text": "Submitted against requirement for stage tracking (initial stage: Sourced)."
+    },
+    {
+      "id": "ac_mt2ngfsambolb",
+      "candidateId": "cd_1",
+      "ts": "2026-08-18",
+      "actor": "rahul",
+      "text": "Moved to stage \"Interview\"."
+    },
+    {
+      "id": "ac_mt2ngfsazfvl2",
+      "candidateId": "cd_2",
+      "ts": "2026-07-27",
+      "actor": "rahul",
+      "text": "Submitted against requirement for stage tracking (initial stage: Sourced)."
+    },
+    {
+      "id": "ac_mt2ngfsakekvj",
+      "candidateId": "cd_2",
+      "ts": "2026-08-20",
+      "actor": "rahul",
+      "text": "Moved to stage \"Offer\"."
+    },
+    {
+      "id": "ac_mt2ngfsa65rlm",
+      "candidateId": "cd_6",
+      "ts": "2026-08-15",
+      "actor": "anjali",
+      "text": "Submitted against requirement for stage tracking (initial stage: Sourced)."
+    },
+    {
+      "id": "ac_mt2ngfsazznty",
+      "candidateId": "cd_6",
+      "ts": "2026-08-15",
+      "actor": "anjali",
+      "text": "Moved to stage \"Submitted\"."
+    },
+    {
+      "id": "ac_mt2ngfsak190q",
+      "candidateId": "cd_3",
+      "ts": "2026-08-17",
+      "actor": "anjali",
+      "text": "Submitted against requirement for stage tracking (initial stage: Sourced)."
+    },
+    {
+      "id": "ac_mt2ngfsauw803",
+      "candidateId": "cd_3",
+      "ts": "2026-08-17",
+      "actor": "anjali",
+      "text": "Moved to stage \"Screened\"."
+    },
+    {
+      "id": "ac_mt2ngfsavfpfj",
+      "candidateId": "cd_4",
+      "ts": "2026-07-22",
+      "actor": "rahul",
+      "text": "Submitted against requirement for stage tracking (initial stage: Sourced)."
+    },
+    {
+      "id": "ac_mt2ngfsaqjo1g",
+      "candidateId": "cd_4",
+      "ts": "2026-08-19",
+      "actor": "rahul",
+      "text": "Moved to stage \"Joined\"."
+    },
+    {
+      "id": "ac_mt2ngfsa7vaw6",
+      "candidateId": "cd_5",
+      "ts": "2026-08-19",
+      "actor": "anjali",
+      "text": "Submitted against requirement for stage tracking (initial stage: Sourced)."
+    }
+  ],
+  "settings": {
+    "weights": {
+      "submission": 1,
+      "interview": 2,
+      "offer": 3,
+      "join": 5
+    }
+  }
+}
