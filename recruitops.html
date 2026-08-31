@@ -1,0 +1,1197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecruitOps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14213D; --ink-2:#1E2E52;
+  --paper:#F6F7F9; --paper-2:#EDEFF3; --white:#FFFFFF;
+  --steel:#5C6B7A; --steel-light:#8A97A6;
+  --line:#DDE1E7;
+  --amber:#E8963A; --amber-bg:#FCF0DE;
+  --green:#2F7D5C; --green-bg:#E4F3EC;
+  --orange:#D97A34; --orange-bg:#FBEADB;
+  --red:#C1443D; --red-bg:#FBE7E5;
+  --blue:#2E5AAC; --blue-bg:#E7EDF9;
+  --shadow: 0 1px 2px rgba(20,33,61,.06), 0 4px 14px rgba(20,33,61,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:'Inter',sans-serif; background:var(--paper); color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.display{font-family:'Fraunces',serif;}
+.mono{font-family:'JetBrains Mono',monospace;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+::selection{background:var(--ink);color:#fff;}
+a{color:inherit;}
+
+/* ---------- Auth Screen ---------- */
+#authScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(232,150,58,.10), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(46,90,172,.10), transparent 40%),
+    var(--ink);
+  padding:24px;
+}
+.auth-card{
+  background:var(--white); width:100%; max-width:400px; border-radius:14px;
+  padding:38px 34px 30px; box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+.auth-brand{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
+.auth-mark{
+  width:34px;height:34px;border-radius:8px;background:var(--ink);
+  display:flex;align-items:center;justify-content:center;color:var(--amber);
+  font-family:'Fraunces',serif;font-weight:700;font-size:18px;
+}
+.auth-brand-name{font-family:'Fraunces',serif; font-size:22px; font-weight:600; letter-spacing:-.01em;}
+.auth-sub{color:var(--steel); font-size:13.5px; margin:6px 0 26px;}
+.field{margin-bottom:16px;}
+.field label{display:block; font-size:12.5px; font-weight:600; color:var(--steel); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
+.field input,.field select,.field textarea{
+  width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px;
+  font-size:14.5px; background:var(--paper); color:var(--ink); transition:border-color .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none; border-color:var(--ink);}
+.btn{
+  border:none; border-radius:8px; padding:10px 16px; font-size:14px; font-weight:600;
+  display:inline-flex; align-items:center; gap:6px; transition:transform .1s, opacity .15s;
+}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:var(--ink); color:#fff; width:100%; justify-content:center; padding:11px;}
+.btn-primary:hover{background:var(--ink-2);}
+.btn-ghost{background:transparent; color:var(--steel); border:1px solid var(--line);}
+.btn-ghost:hover{border-color:var(--steel);}
+.btn-amber{background:var(--amber); color:#fff;}
+.btn-danger{background:var(--red); color:#fff;}
+.btn-sm{padding:6px 10px; font-size:12.5px; border-radius:6px;}
+.auth-error{color:var(--red); font-size:13px; margin-top:-6px; margin-bottom:14px; min-height:16px;}
+.demo-accounts{margin-top:22px; padding-top:18px; border-top:1px solid var(--line);}
+.demo-accounts p{font-size:11.5px; color:var(--steel-light); text-transform:uppercase; letter-spacing:.05em; margin:0 0 8px;}
+.demo-row{display:flex; justify-content:space-between; font-size:12.5px; padding:4px 0; color:var(--steel); cursor:pointer;}
+.demo-row:hover{color:var(--ink);}
+.demo-row span.mono{color:var(--ink);}
+
+/* ---------- App Shell ---------- */
+#app{display:none; min-height:100vh; grid-template-columns:220px 1fr;}
+#app.active{display:grid;}
+#sidebar{
+  background:var(--ink); color:#fff; padding:22px 14px; display:flex; flex-direction:column;
+}
+.side-brand{display:flex; align-items:center; gap:9px; padding:0 8px 22px; border-bottom:1px solid rgba(255,255,255,.1); margin-bottom:14px;}
+.side-mark{width:28px;height:28px;border-radius:7px;background:var(--amber);display:flex;align-items:center;justify-content:center;color:var(--ink);font-family:'Fraunces',serif;font-weight:700;font-size:15px;}
+.side-name{font-family:'Fraunces',serif; font-size:17px; font-weight:600;}
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:7px; color:rgba(255,255,255,.68);
+  font-size:13.5px; font-weight:500; margin-bottom:2px; cursor:pointer; transition:background .12s, color .12s;
+}
+.nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.12); color:#fff;}
+.nav-ico{width:16px; text-align:center; font-size:14px;}
+.side-foot{margin-top:auto; padding-top:14px; border-top:1px solid rgba(255,255,255,.1);}
+.side-user{padding:8px; font-size:12.5px; color:rgba(255,255,255,.55); line-height:1.5;}
+.side-user b{color:#fff; display:block; font-size:13.5px;}
+.role-pill{display:inline-block; margin-top:3px; font-size:10.5px; background:rgba(232,150,58,.18); color:var(--amber); padding:2px 7px; border-radius:20px; text-transform:uppercase; letter-spacing:.04em;}
+.logout-btn{width:100%; margin-top:10px; background:rgba(255,255,255,.08); color:#fff; text-align:center; justify-content:center; border:none;}
+.logout-btn:hover{background:rgba(255,255,255,.15);}
+
+#main{padding:26px 32px 60px; overflow-x:hidden;}
+.topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;}
+.page-title{font-family:'Fraunces',serif; font-size:26px; font-weight:600; letter-spacing:-.01em;}
+.page-sub{color:var(--steel); font-size:13.5px; margin-top:2px;}
+
+.toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.select-sm{padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:#fff; color:var(--ink);}
+
+/* KPI cards */
+.kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:14px; margin-bottom:22px;}
+.kpi-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);}
+.kpi-label{font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--steel-light); font-weight:600;}
+.kpi-value{font-family:'Fraunces',serif; font-size:30px; font-weight:600; margin-top:6px;}
+.kpi-note{font-size:11.5px; color:var(--steel); margin-top:2px;}
+
+.grid-2{display:grid; grid-template-columns:1.3fr 1fr; gap:18px; align-items:start;}
+@media(max-width:1080px){.grid-2{grid-template-columns:1fr;}}
+
+.card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; box-shadow:var(--shadow); margin-bottom:18px;}
+.card-title{font-family:'Fraunces',serif; font-size:16.5px; font-weight:600; margin:0 0 14px; display:flex; justify-content:space-between; align-items:center;}
+
+/* funnel */
+.funnel-row{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+.funnel-label{width:96px; font-size:12.5px; color:var(--steel); font-weight:600;}
+.funnel-bar-wrap{flex:1; background:var(--paper-2); border-radius:6px; height:22px; position:relative; overflow:hidden;}
+.funnel-bar{height:100%; background:linear-gradient(90deg,var(--ink),var(--blue)); border-radius:6px; display:flex; align-items:center; justify-content:flex-end; padding-right:8px; transition:width .4s;}
+.funnel-bar span{color:#fff; font-size:11.5px; font-weight:700;}
+
+/* aging ruler - signature element */
+.ruler{display:flex; align-items:center; gap:8px;}
+.ruler-track{flex:1; height:6px; background:var(--paper-2); border-radius:4px; position:relative; min-width:60px;}
+.ruler-fill{position:absolute; top:0; left:0; height:100%; border-radius:4px;}
+.ruler-days{font-size:11.5px; font-weight:700; font-family:'JetBrains Mono',monospace; min-width:44px; text-align:right;}
+.tag{display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:3px 8px; border-radius:20px; text-transform:uppercase; letter-spacing:.03em;}
+.tag-green{background:var(--green-bg); color:var(--green);}
+.tag-amber{background:var(--amber-bg); color:var(--amber);}
+.tag-orange{background:var(--orange-bg); color:var(--orange);}
+.tag-red{background:var(--red-bg); color:var(--red);}
+.tag-blue{background:var(--blue-bg); color:var(--blue);}
+.tag-gray{background:var(--paper-2); color:var(--steel);}
+
+/* tables */
+table{width:100%; border-collapse:collapse; font-size:13.5px;}
+th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--steel-light); font-weight:700; padding:0 12px 10px; border-bottom:1px solid var(--line);}
+td{padding:12px; border-bottom:1px solid var(--paper-2); vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr.tbl-row:hover{background:var(--paper-2);}
+.name-cell b{display:block; font-size:13.5px;}
+.name-cell small{color:var(--steel); font-size:11.5px;}
+.icon-btn{background:transparent; border:1px solid var(--line); border-radius:6px; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; color:var(--steel); font-size:13px;}
+.icon-btn:hover{border-color:var(--ink); color:var(--ink);}
+.row-actions{display:flex; gap:6px; justify-content:flex-end;}
+.empty-state{text-align:center; padding:50px 20px; color:var(--steel);}
+.empty-state .em-ico{font-size:30px; margin-bottom:10px;}
+.empty-state b{display:block; color:var(--ink); font-size:15px; margin-bottom:4px; font-family:'Fraunces',serif;}
+
+/* Kanban */
+.kanban{display:flex; gap:14px; overflow-x:auto; padding-bottom:12px;}
+.kcol{background:var(--paper-2); border-radius:12px; min-width:230px; max-width:230px; padding:12px; flex-shrink:0;}
+.kcol-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 2px;}
+.kcol-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; color:var(--steel);}
+.kcol-count{background:#fff; border-radius:20px; padding:1px 8px; font-size:11.5px; font-weight:700; color:var(--ink);}
+.kcard{background:#fff; border-radius:9px; padding:11px 12px; margin-bottom:9px; box-shadow:0 1px 3px rgba(20,33,61,.08); cursor:pointer; border:1px solid transparent;}
+.kcard:hover{border-color:var(--line);}
+.kcard-name{font-weight:700; font-size:13.5px;}
+.kcard-req{font-size:11.5px; color:var(--steel); margin-top:2px;}
+.kcard-foot{display:flex; justify-content:space-between; align-items:center; margin-top:9px;}
+.kcard-rec{font-size:10.5px; color:var(--steel-light); font-weight:600;}
+.kcard-move{display:flex; gap:4px;}
+.mini-btn{border:none; background:var(--paper-2); border-radius:5px; width:22px; height:20px; font-size:11px; color:var(--ink);}
+.mini-btn:hover{background:var(--ink); color:#fff;}
+.mini-btn.rej:hover{background:var(--red);}
+
+/* Modal */
+.modal-overlay{position:fixed; inset:0; background:rgba(20,33,61,.5); display:none; align-items:flex-start; justify-content:center; z-index:100; padding:40px 20px; overflow-y:auto;}
+.modal-overlay.active{display:flex;}
+.modal{background:#fff; border-radius:14px; width:100%; max-width:480px; padding:26px 26px 22px; box-shadow:0 20px 60px rgba(0,0,0,.3);}
+.modal-title{font-family:'Fraunces',serif; font-size:19px; font-weight:600; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center;}
+.modal-close{background:none;border:none;font-size:18px;color:var(--steel);}
+.modal-actions{display:flex; gap:10px; margin-top:20px;}
+.modal-actions .btn{flex:1;}
+.field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+/* candidate detail */
+.timeline{margin-top:6px;}
+.tl-item{display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--paper-2);}
+.tl-dot{width:8px;height:8px;border-radius:50%;background:var(--ink); margin-top:5px; flex-shrink:0;}
+.tl-body{font-size:13px;}
+.tl-time{font-size:11px; color:var(--steel-light); margin-top:1px;}
+
+.toast{position:fixed; bottom:24px; right:24px; background:var(--ink); color:#fff; padding:12px 18px; border-radius:9px; font-size:13.5px; box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:200; opacity:0; transform:translateY(10px); transition:all .25s;}
+.toast.show{opacity:1; transform:translateY(0);}
+
+.badge-status{padding:3px 9px; border-radius:5px; font-size:11.5px; font-weight:700;}
+.section-note{font-size:12.5px; color:var(--steel); background:var(--paper-2); padding:10px 14px; border-radius:8px; margin-bottom:16px;}
+.weights-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.perf-bar-track{background:var(--paper-2); height:8px; border-radius:6px; overflow:hidden;}
+.perf-bar-fill{height:100%; background:var(--ink); border-radius:6px;}
+::-webkit-scrollbar{height:8px; width:8px;}
+::-webkit-scrollbar-thumb{background:var(--line); border-radius:8px;}
+</style>
+</head>
+<body>
+
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-mark">R</div>
+      <div class="auth-brand-name">RecruitOps</div>
+    </div>
+    <div class="auth-sub">Requisition-to-joining tracker for staffing teams.</div>
+    <div class="field">
+      <label>Username</label>
+      <input id="loginUser" type="text" placeholder="e.g. admin" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="loginPass" type="password" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="auth-error" id="loginError"></div>
+    <button class="btn btn-primary" onclick="doLogin()">Log in</button>
+    <div class="demo-accounts" style="margin-top:16px; padding-top:14px;">
+      <p>Central server</p>
+      <div id="serverStatusRow" style="font-size:12.5px; color:var(--steel); display:flex; justify-content:space-between; align-items:center;">
+        <span id="serverStatusText" class="mono">checking…</span>
+        <a href="#" onclick="promptServerUrl();return false;" style="font-size:12px; font-weight:600;">change</a>
+      </div>
+    </div>
+    <div class="demo-accounts">
+      <p>Seeded demo accounts — tap to fill</p>
+      <div class="demo-row" onclick="fillLogin('admin','admin123')"><span>Super Admin</span><span class="mono">admin / admin123</span></div>
+      <div class="demo-row" onclick="fillLogin('priya','demo123')"><span>Recruitment Head</span><span class="mono">priya / demo123</span></div>
+      <div class="demo-row" onclick="fillLogin('vikram','demo123')"><span>Team Leader</span><span class="mono">vikram / demo123</span></div>
+      <div class="demo-row" onclick="fillLogin('rahul','demo123')"><span>Recruiter</span><span class="mono">rahul / demo123</span></div>
+      <div class="demo-row" onclick="fillLogin('sanjay','demo123')"><span>Sales / AM</span><span class="mono">sanjay / demo123</span></div>
+      <div class="demo-row" onclick="fillLogin('neha','demo123')"><span>Management</span><span class="mono">neha / demo123</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <div id="sidebar">
+    <div class="side-brand">
+      <div class="side-mark">R</div>
+      <div class="side-name">RecruitOps</div>
+    </div>
+    <div id="navList"></div>
+    <div class="side-foot">
+      <div class="side-user" id="sideUser"></div>
+      <button class="btn logout-btn" onclick="doLogout()">Log out</button>
+    </div>
+  </div>
+  <div id="main"></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================= CONSTANTS ============================= */
+const STORAGE_KEY = 'recruitops-db-v1';
+const STAGES = ['Sourced','Screened','Submitted','Interview','Offer','Joined'];
+const TERMINAL = ['Rejected','Dropped'];
+const REQ_STATUS = ['Open','On Hold','Closed'];
+const PRIORITY = ['High','Medium','Low'];
+const INTERVIEW_STATUS = ['Scheduled','Completed','No-show','Cancelled'];
+const INTERVIEW_OUTCOME = ['Pending','Selected','Rejected','Next Round'];
+const OFFER_STATUS = ['Extended','Accepted','Declined','Withdrawn'];
+const JOIN_STATUS = ['Pending','Joined','No-show','Deferred'];
+
+const ROLES = {
+  superadmin:{label:'Super Admin', nav:['dashboard','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
+  head:{label:'Recruitment Head', nav:['dashboard','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
+  teamlead:{label:'Team Leader', nav:['dashboard','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance']},
+  recruiter:{label:'Recruiter', nav:['dashboard','candidates','pipeline','submissions','interviews','offers','joining']},
+  salesam:{label:'Sales / AM', nav:['dashboard','clients','requirements']},
+  management:{label:'Management', nav:['dashboard','performance']}
+};
+const NAV_META = {
+  dashboard:{label:'Dashboard', ico:'&#9673;'},
+  clients:{label:'Clients', ico:'&#9635;'},
+  requirements:{label:'Requirements', ico:'&#9776;'},
+  candidates:{label:'Candidates', ico:'&#9787;'},
+  pipeline:{label:'Pipeline', ico:'&#8942;'},
+  submissions:{label:'Submissions', ico:'&#10148;'},
+  interviews:{label:'Interviews', ico:'&#128172;'},
+  offers:{label:'Offers', ico:'&#128196;'},
+  joining:{label:'Joining', ico:'&#10003;'},
+  performance:{label:'Performance', ico:'&#9733;'},
+  settings:{label:'Settings', ico:'&#9881;'}
+};
+
+/* ============================= STATE ============================= */
+let DB = null;
+let CURRENT_USER = null;
+let ROUTE = 'dashboard';
+let PIPELINE_FILTER = 'all';
+
+function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function nowIso(){ return new Date().toISOString(); }
+function fmtDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}); }
+function daysBetween(a,b){ return Math.floor((b-a)/(1000*60*60*24)); }
+function todayIso(){ return new Date().toISOString().slice(0,10); }
+
+/* ============================= SEED DATA ============================= */
+function seedDB(){
+  const users = [
+    {username:'admin', password:'admin123', role:'superadmin', name:'Admin'},
+    {username:'priya', password:'demo123', role:'head', name:'Priya Sharma'},
+    {username:'vikram', password:'demo123', role:'teamlead', name:'Vikram Rao'},
+    {username:'rahul', password:'demo123', role:'recruiter', name:'Rahul Mehta'},
+    {username:'anjali', password:'demo123', role:'recruiter', name:'Anjali Nair'},
+    {username:'sanjay', password:'demo123', role:'salesam', name:'Sanjay Gupta'},
+    {username:'neha', password:'demo123', role:'management', name:'Neha Kapoor'}
+  ];
+  const clients = [
+    {id:'cl_1', name:'Orbit Financial Services', contact:'Meera Iyer · meera@orbitfs.com'},
+    {id:'cl_2', name:'Northgate Retail', contact:'Karan Bedi · karan@northgate.com'}
+  ];
+  const daysAgo = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
+  const requirements = [
+    {id:'rq_1', clientId:'cl_1', title:'Senior Java Backend Engineer', positions:3, status:'Open', priority:'High', openedDate:daysAgo(38), skills:'Java, Spring Boot, Microservices'},
+    {id:'rq_2', clientId:'cl_1', title:'QA Automation Lead', positions:1, status:'Open', priority:'Medium', openedDate:daysAgo(12), skills:'Selenium, Java, CI/CD'},
+    {id:'rq_3', clientId:'cl_2', title:'Store Operations Manager', positions:2, status:'Open', priority:'High', openedDate:daysAgo(4), skills:'Retail Ops, Team Management'},
+    {id:'rq_4', clientId:'cl_2', title:'Data Analyst', positions:1, status:'Closed', priority:'Low', openedDate:daysAgo(60), skills:'SQL, Excel, Power BI'}
+  ];
+  const candidates = [
+    {id:'cd_1', name:'Ananya Verma', email:'ananya.verma@mail.com', phone:'9820011223', skills:'Java, Spring Boot', source:'LinkedIn'},
+    {id:'cd_2', name:'Rohit Sinha', email:'rohit.sinha@mail.com', phone:'9820011224', skills:'Java, Microservices', source:'Referral'},
+    {id:'cd_3', name:'Fatima Sheikh', email:'fatima.sheikh@mail.com', phone:'9820011225', skills:'Selenium, Java', source:'Naukri'},
+    {id:'cd_4', name:'Karthik Iyer', email:'karthik.iyer@mail.com', phone:'9820011226', skills:'Retail Ops', source:'LinkedIn'},
+    {id:'cd_5', name:'Sneha Reddy', email:'sneha.reddy@mail.com', phone:'9820011227', skills:'Store Management', source:'Referral'},
+    {id:'cd_6', name:'Manoj Tiwari', email:'manoj.tiwari@mail.com', phone:'9820011228', skills:'Java, AWS', source:'Naukri'}
+  ];
+  const submissions = [
+    {id:'sb_1', candidateId:'cd_1', requirementId:'rq_1', recruiter:'rahul', stage:'Interview', createdAt:daysAgo(20), updatedAt:daysAgo(3)},
+    {id:'sb_2', candidateId:'cd_2', requirementId:'rq_1', recruiter:'rahul', stage:'Offer', createdAt:daysAgo(25), updatedAt:daysAgo(1)},
+    {id:'sb_3', candidateId:'cd_6', requirementId:'rq_1', recruiter:'anjali', stage:'Submitted', createdAt:daysAgo(6), updatedAt:daysAgo(6)},
+    {id:'sb_4', candidateId:'cd_3', requirementId:'rq_2', recruiter:'anjali', stage:'Screened', createdAt:daysAgo(4), updatedAt:daysAgo(4)},
+    {id:'sb_5', candidateId:'cd_4', requirementId:'rq_3', recruiter:'rahul', stage:'Joined', createdAt:daysAgo(30), updatedAt:daysAgo(2)},
+    {id:'sb_6', candidateId:'cd_5', requirementId:'rq_3', recruiter:'anjali', stage:'Sourced', createdAt:daysAgo(2), updatedAt:daysAgo(2)}
+  ];
+  const interviews = [
+    {id:'iv_1', submissionId:'sb_1', round:'L1 - Technical', date:daysAgo(3), interviewer:'Client Panel', status:'Completed', outcome:'Next Round', feedback:'Strong on core Java, needs system design push.'}
+  ];
+  const offers = [
+    {id:'of_1', submissionId:'sb_2', ctc:'₹18,50,000', joiningDate: (()=>{const d=new Date();d.setDate(d.getDate()+21);return d.toISOString().slice(0,10);})(), status:'Extended', extendedDate:daysAgo(1)}
+  ];
+  const joinings = [
+    {id:'jn_1', submissionId:'sb_5', actualDate:daysAgo(2), status:'Joined'}
+  ];
+  const activity = [];
+  [submissions].flat().forEach(s=>{
+    activity.push({id:uid('ac'), candidateId:s.candidateId, ts:s.createdAt, actor:s.recruiter, text:`Submitted against requirement for stage tracking (initial stage: Sourced).`});
+    if(s.stage!=='Sourced') activity.push({id:uid('ac'), candidateId:s.candidateId, ts:s.updatedAt, actor:s.recruiter, text:`Moved to stage "${s.stage}".`});
+  });
+
+  return {
+    users, clients, requirements, candidates, submissions, interviews, offers, joinings, activity,
+    settings:{ weights:{submission:1, interview:2, offer:3, join:5} }
+  };
+}
+
+/* ============================= PERSISTENCE (Central Server) ============================= */
+/* All data lives on one central server, reachable over your network, so every
+   teammate's copy of this file reads and writes the same shared dataset. */
+const API_BASE_KEY = 'recruitops-api-base';
+function getApiBase(){
+  const saved = localStorage.getItem(API_BASE_KEY);
+  if(saved) return saved;
+  // If this page was served BY the central server itself (e.g. opened via
+  // https://recruitops-server.onrender.com), talk back to that same server
+  // automatically — no manual setup needed. Only fall back to localhost
+  // when this file was opened locally (file:// address).
+  if(window.location.protocol !== 'file:' && window.location.origin){
+    return window.location.origin;
+  }
+  return 'http://localhost:4000';
+}
+function setApiBase(url){ localStorage.setItem(API_BASE_KEY, url.replace(/\/+$/,'')); }
+
+async function checkServerStatus(){
+  const el = document.getElementById('serverStatusText');
+  if(!el) return;
+  el.textContent = getApiBase();
+  try{
+    const res = await fetch(getApiBase()+'/api/health', {cache:'no-store'});
+    if(res.ok){ el.style.color='var(--green)'; el.title='Connected'; }
+    else throw new Error('bad status');
+  }catch(e){
+    el.style.color='var(--red)'; el.title='Cannot reach server';
+    el.textContent = getApiBase() + ' (unreachable)';
+  }
+}
+function promptServerUrl(){
+  const current = getApiBase();
+  const val = prompt('Central server URL (ask whoever set up the server for this):', current);
+  if(val && val.trim()){ setApiBase(val.trim()); checkServerStatus(); showToast('Server URL updated.'); }
+}
+
+async function loadDB(){
+  const res = await fetch(getApiBase()+'/api/data', {cache:'no-store'});
+  if(!res.ok) throw new Error('Failed to load data from server ('+res.status+').');
+  DB = await res.json();
+}
+async function saveDB(){
+  try{
+    const res = await fetch(getApiBase()+'/api/data', {
+      method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(DB)
+    });
+    if(!res.ok) throw new Error('bad status '+res.status);
+  }catch(e){
+    console.error('save failed', e);
+    showToast('Could not reach the central server — this change was not saved.');
+  }
+}
+function persist(){ saveDB(); }
+
+// Poll for changes made by other users while logged in, skip while a modal is open.
+setInterval(async ()=>{
+  if(!CURRENT_USER) return;
+  if(document.getElementById('modalOverlay').classList.contains('active')) return;
+  try{ await loadDB(); renderRoute(); }catch(e){ /* server may be temporarily unreachable */ }
+}, 8000);
+
+/* ============================= AUTH ============================= */
+function fillLogin(u,p){ document.getElementById('loginUser').value=u; document.getElementById('loginPass').value=p; }
+async function doLogin(){
+  const u=document.getElementById('loginUser').value.trim();
+  const p=document.getElementById('loginPass').value;
+  const err=document.getElementById('loginError');
+  try{ await loadDB(); }
+  catch(e){ err.textContent='Cannot reach the central server. Check the server URL below.'; return; }
+  const user = DB.users.find(x=>x.username===u && x.password===p);
+  if(!user){ err.textContent='Incorrect username or password.'; return; }
+  err.textContent='';
+  CURRENT_USER = user;
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('app').classList.add('active');
+  ROUTE = ROLES[user.role].nav[0];
+  renderNav();
+  renderRoute();
+}
+function doLogout(){
+  CURRENT_USER=null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('authScreen').style.display='flex';
+  document.getElementById('loginUser').value=''; document.getElementById('loginPass').value='';
+}
+
+/* ============================= NAV / SHELL ============================= */
+function renderNav(){
+  const nav = ROLES[CURRENT_USER.role].nav;
+  document.getElementById('navList').innerHTML = nav.map(key=>{
+    const m = NAV_META[key];
+    return `<div class="nav-item ${ROUTE===key?'active':''}" onclick="goRoute('${key}')"><span class="nav-ico">${m.ico}</span>${m.label}</div>`;
+  }).join('');
+  document.getElementById('sideUser').innerHTML = `<b>${CURRENT_USER.name}</b>${CURRENT_USER.username}<div class="role-pill">${ROLES[CURRENT_USER.role].label}</div>`;
+}
+function goRoute(key){ ROUTE=key; renderNav(); renderRoute(); }
+function renderRoute(){
+  const fn = {
+    dashboard:renderDashboard, clients:renderClients, requirements:renderRequirements,
+    candidates:renderCandidates, pipeline:renderPipeline, submissions:renderSubmissions,
+    interviews:renderInterviews, offers:renderOffers, joining:renderJoining,
+    performance:renderPerformance, settings:renderSettings
+  }[ROUTE];
+  document.getElementById('main').innerHTML = fn ? fn() : '';
+  afterRender();
+}
+function afterRender(){ /* hook for post-render JS if a view needs it */ }
+
+/* ============================= HELPERS ============================= */
+function clientName(id){ const c=DB.clients.find(x=>x.id===id); return c?c.name:'—'; }
+function reqTitle(id){ const r=DB.requirements.find(x=>x.id===id); return r?r.title:'—'; }
+function candName(id){ const c=DB.candidates.find(x=>x.id===id); return c?c.name:'—'; }
+function subById(id){ return DB.submissions.find(x=>x.id===id); }
+function userName(username){ const u=DB.users.find(x=>x.username===username); return u?u.name:username; }
+function recruiterOptions(){ return DB.users.filter(u=>u.role==='recruiter'||u.role==='teamlead'||u.role==='head'||u.role==='superadmin'); }
+
+function agingInfo(openedDate){
+  const days = daysBetween(new Date(openedDate), new Date());
+  let color, cls;
+  if(days<7){ color='var(--green)'; cls='tag-green'; }
+  else if(days<14){ color='var(--amber)'; cls='tag-amber'; }
+  else if(days<30){ color='var(--orange)'; cls='tag-orange'; }
+  else { color='var(--red)'; cls='tag-red'; }
+  const pct = Math.min(100, Math.round((days/45)*100));
+  return {days,color,cls,pct};
+}
+function agingRuler(openedDate){
+  const a = agingInfo(openedDate);
+  return `<div class="ruler"><div class="ruler-track"><div class="ruler-fill" style="width:${a.pct}%; background:${a.color}"></div></div><div class="ruler-days mono" style="color:${a.color}">${a.days}d</div></div>`;
+}
+function stageTag(stage){
+  const map = {Sourced:'tag-gray', Screened:'tag-blue', Submitted:'tag-blue', Interview:'tag-amber', Offer:'tag-orange', Joined:'tag-green', Rejected:'tag-red', Dropped:'tag-red'};
+  return `<span class="tag ${map[stage]||'tag-gray'}">${stage}</span>`;
+}
+function logActivity(candidateId, text){
+  DB.activity.unshift({id:uid('ac'), candidateId, ts:nowIso(), actor:CURRENT_USER.username, text});
+}
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._toastTimer); window._toastTimer=setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function esc(s){ return (s===undefined||s===null) ? '' : String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* CSV export */
+function exportCSV(rows, filename){
+  if(!rows.length){ showToast('Nothing to export yet.'); return; }
+  const cols = Object.keys(rows[0]);
+  const csv = [cols.join(',')].concat(rows.map(r=>cols.map(c=>{
+    let v = r[c]===undefined||r[c]===null ? '' : String(r[c]);
+    v = v.replace(/"/g,'""');
+    return /[",\n]/.test(v) ? `"${v}"` : v;
+  }).join(','))).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+/* ============================= MODAL ENGINE ============================= */
+function openModal(title, fields, values, onSubmit, opts){
+  opts = opts || {};
+  const overlay = document.getElementById('modalOverlay');
+  const box = document.getElementById('modalBox');
+  box.innerHTML = `
+    <div class="modal-title">${esc(title)}<button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <form id="modalForm" onsubmit="return false;">
+      ${fields.map(f=>renderField(f, values[f.key])).join('')}
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" id="modalSubmitBtn">${opts.submitLabel||'Save'}</button>
+      </div>
+    </form>`;
+  overlay.classList.add('active');
+  document.getElementById('modalSubmitBtn').onclick = ()=>{
+    const out = {};
+    let valid = true;
+    fields.forEach(f=>{
+      const el = document.getElementById('mf_'+f.key);
+      let v = el.value;
+      if(f.required && !v){ valid=false; el.style.borderColor='var(--red)'; }
+      out[f.key] = f.type==='number' ? (v===''?'':Number(v)) : v;
+    });
+    if(!valid){ showToast('Please fill required fields.'); return; }
+    onSubmit(out);
+    closeModal();
+  };
+}
+function renderField(f, val){
+  val = val===undefined||val===null? '' : val;
+  const req = f.required ? 'required' : '';
+  if(f.type==='select'){
+    return `<div class="field"><label>${esc(f.label)}</label>
+      <select id="mf_${f.key}">${f.options.map(o=>`<option value="${esc(o)}" ${o===val?'selected':''}>${esc(o)}</option>`).join('')}</select></div>`;
+  }
+  if(f.type==='textarea'){
+    return `<div class="field"><label>${esc(f.label)}</label><textarea id="mf_${f.key}" rows="3">${esc(val)}</textarea></div>`;
+  }
+  return `<div class="field"><label>${esc(f.label)}</label><input id="mf_${f.key}" type="${f.type||'text'}" value="${esc(val)}" ${req}></div>`;
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('active'); }
+
+/* ============================= DASHBOARD ============================= */
+function renderDashboard(){
+  const openReqs = DB.requirements.filter(r=>r.status==='Open');
+  const activeSubs = DB.submissions.filter(s=>!TERMINAL.includes(s.stage));
+  const in7 = new Date(); in7.setDate(in7.getDate()+7);
+  const upcomingInterviews = DB.interviews.filter(i=> i.status==='Scheduled' && new Date(i.date) <= in7 && new Date(i.date) >= new Date(new Date().toDateString()));
+  const offersLive = DB.offers.filter(o=>o.status==='Extended'||o.status==='Accepted');
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const joinedThisMonth = DB.joinings.filter(j=>j.status==='Joined' && j.actualDate && j.actualDate.slice(0,7)===thisMonth);
+
+  const funnelCounts = STAGES.map(st=>{
+    const idx = STAGES.indexOf(st);
+    return DB.submissions.filter(s=>{
+      const sIdx = STAGES.indexOf(s.stage);
+      return (sIdx>=idx) || (TERMINAL.includes(s.stage) && idx===0);
+    }).length;
+  });
+  const maxFunnel = Math.max(1, funnelCounts[0]);
+
+  const agingList = openReqs.slice().sort((a,b)=> daysBetween(new Date(a.openedDate),new Date()) - daysBetween(new Date(b.openedDate),new Date()) ).reverse().slice(0,5);
+
+  const weights = DB.settings.weights;
+  const perf = recruiterScores(weights).slice(0,3);
+
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Dashboard</div><div class="page-sub">Live snapshot across every open requirement.</div></div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Open Requirements</div><div class="kpi-value">${openReqs.length}</div><div class="kpi-note">${DB.requirements.reduce((a,r)=>r.status==='Open'?a+r.positions:a,0)} open positions</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Candidates</div><div class="kpi-value">${DB.candidates.length}</div><div class="kpi-note">in database</div></div>
+    <div class="kpi-card"><div class="kpi-label">Active Submissions</div><div class="kpi-value">${activeSubs.length}</div><div class="kpi-note">in the pipeline now</div></div>
+    <div class="kpi-card"><div class="kpi-label">Interviews (7 days)</div><div class="kpi-value">${upcomingInterviews.length}</div><div class="kpi-note">scheduled</div></div>
+    <div class="kpi-card"><div class="kpi-label">Offers Live</div><div class="kpi-value">${offersLive.length}</div><div class="kpi-note">extended or accepted</div></div>
+    <div class="kpi-card"><div class="kpi-label">Joined This Month</div><div class="kpi-value">${joinedThisMonth.length}</div><div class="kpi-note">confirmed joins</div></div>
+  </div>
+  <div class="grid-2">
+    <div>
+      <div class="card">
+        <div class="card-title">Recruitment Funnel</div>
+        ${STAGES.map((st,i)=>`
+          <div class="funnel-row">
+            <div class="funnel-label">${st}</div>
+            <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:${Math.max(6,(funnelCounts[i]/maxFunnel)*100)}%"><span>${funnelCounts[i]}</span></div></div>
+          </div>`).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">Requirement Aging <span class="tag tag-gray">by days open</span></div>
+        ${agingList.length? agingList.map(r=>`
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--paper-2);">
+            <div><b style="font-size:13.5px;">${esc(r.title)}</b><div style="font-size:11.5px;color:var(--steel)">${esc(clientName(r.clientId))}</div></div>
+            <div style="width:150px;">${agingRuler(r.openedDate)}</div>
+          </div>`).join('') : emptyState('No open requirements yet.')}
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">Top Recruiters <a href="#" onclick="goRoute('performance');return false;" style="font-size:11.5px;font-weight:600;color:var(--steel)">View all →</a></div>
+        ${perf.length? perf.map((p,i)=>`
+          <div style="margin-bottom:12px;">
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:5px;"><b>${i+1}. ${esc(p.name)}</b><span class="mono">${p.score}</span></div>
+            <div class="perf-bar-track"><div class="perf-bar-fill" style="width:${p.pct}%"></div></div>
+          </div>`).join('') : emptyState('No recruiter activity logged yet.')}
+      </div>
+      <div class="card">
+        <div class="card-title">Requirements by Status</div>
+        ${REQ_STATUS.map(st=>{
+          const n = DB.requirements.filter(r=>r.status===st).length;
+          return `<div style="display:flex; justify-content:space-between; padding:7px 0; font-size:13.5px; border-bottom:1px solid var(--paper-2);"><span>${st}</span><b>${n}</b></div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+function emptyState(msg){ return `<div class="empty-state" style="padding:24px;"><div>${esc(msg)}</div></div>`; }
+
+/* ============================= CLIENTS ============================= */
+function renderClients(){
+  const canEdit = ['superadmin','head','salesam'].includes(CURRENT_USER.role);
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Clients</div><div class="page-sub">Companies you recruit for.</div></div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(DB.clients).replace(/'/g,"&#39;")}, "clients.csv")'>Export CSV</button>
+      ${canEdit? `<button class="btn btn-amber" onclick="openClientModal()">+ New Client</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    ${DB.clients.length? `<table><thead><tr><th>Client</th><th>Contact</th><th>Open Requirements</th><th></th></tr></thead><tbody>
+      ${DB.clients.map(c=>{
+        const openCount = DB.requirements.filter(r=>r.clientId===c.id && r.status==='Open').length;
+        return `<tr class="tbl-row">
+          <td class="name-cell"><b>${esc(c.name)}</b></td>
+          <td>${esc(c.contact)}</td>
+          <td>${openCount}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openClientModal('${c.id}')">&#9998;</button>`:''}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>` : emptyState('No clients yet. Add your first client to open requirements against them.')}
+  </div>`;
+}
+function openClientModal(id){
+  const c = id ? DB.clients.find(x=>x.id===id) : {name:'',contact:''};
+  openModal(id?'Edit Client':'New Client', [
+    {key:'name', label:'Client Name', required:true},
+    {key:'contact', label:'Primary Contact'}
+  ], c, (vals)=>{
+    if(id){ Object.assign(c, vals); }
+    else { DB.clients.push({id:uid('cl'), ...vals}); }
+    persist(); renderRoute(); showToast('Client saved.');
+  });
+}
+
+/* ============================= REQUIREMENTS ============================= */
+function renderRequirements(){
+  const canEdit = ['superadmin','head','salesam'].includes(CURRENT_USER.role);
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Requirements</div><div class="page-sub">Open positions across all clients.</div></div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(DB.requirements.map(r=>({...r, client:clientName(r.clientId)}))).replace(/'/g,"&#39;")}, "requirements.csv")'>Export CSV</button>
+      ${canEdit? `<button class="btn btn-amber" onclick="openReqModal()">+ New Requirement</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    ${DB.requirements.length? `<table><thead><tr><th>Requirement</th><th>Client</th><th>Positions</th><th>Priority</th><th>Status</th><th>Aging</th><th></th></tr></thead><tbody>
+      ${DB.requirements.map(r=>`
+        <tr class="tbl-row">
+          <td class="name-cell"><b>${esc(r.title)}</b><small>${esc(r.skills)}</small></td>
+          <td>${esc(clientName(r.clientId))}</td>
+          <td>${r.positions}</td>
+          <td>${tagForPriority(r.priority)}</td>
+          <td>${tagForStatus(r.status)}</td>
+          <td style="width:140px;">${r.status==='Open'?agingRuler(r.openedDate):'—'}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openReqModal('${r.id}')">&#9998;</button>`:''}</td>
+        </tr>`).join('')}
+      </tbody></table>` : emptyState('No requirements yet. Create one to start sourcing candidates.')}
+  </div>`;
+}
+function tagForPriority(p){ const m={High:'tag-red',Medium:'tag-amber',Low:'tag-gray'}; return `<span class="tag ${m[p]}">${p}</span>`; }
+function tagForStatus(s){ const m={Open:'tag-green','On Hold':'tag-amber',Closed:'tag-gray'}; return `<span class="tag ${m[s]}">${s}</span>`; }
+function openReqModal(id){
+  const r = id ? DB.requirements.find(x=>x.id===id) : {clientId:DB.clients[0]?.id||'', title:'', positions:1, status:'Open', priority:'Medium', openedDate:todayIso(), skills:''};
+  openModal(id?'Edit Requirement':'New Requirement', [
+    {key:'title', label:'Position Title', required:true},
+    {key:'clientId', label:'Client', type:'select', options:DB.clients.map(c=>c.id), required:true},
+    {key:'positions', label:'No. of Positions', type:'number', required:true},
+    {key:'priority', label:'Priority', type:'select', options:PRIORITY},
+    {key:'status', label:'Status', type:'select', options:REQ_STATUS},
+    {key:'openedDate', label:'Opened Date', type:'date'},
+    {key:'skills', label:'Key Skills', type:'textarea'}
+  ], r, (vals)=>{
+    if(id){ Object.assign(r, vals); }
+    else { DB.requirements.push({id:uid('rq'), ...vals}); }
+    persist(); renderRoute(); showToast('Requirement saved.');
+  });
+  // fix client select to show names
+  setTimeout(()=>{
+    const sel = document.getElementById('mf_clientId');
+    if(sel){ Array.from(sel.options).forEach(o=> o.textContent = clientName(o.value)); }
+  },0);
+}
+
+/* ============================= CANDIDATES ============================= */
+function renderCandidates(){
+  const canEdit = ['superadmin','head','teamlead','recruiter'].includes(CURRENT_USER.role);
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Candidates</div><div class="page-sub">Talent pool across all requirements.</div></div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(DB.candidates).replace(/'/g,"&#39;")}, "candidates.csv")'>Export CSV</button>
+      ${canEdit? `<button class="btn btn-amber" onclick="openCandModal()">+ Add Candidate</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    ${DB.candidates.length? `<table><thead><tr><th>Candidate</th><th>Skills</th><th>Source</th><th>Resume</th><th>Active In</th><th></th></tr></thead><tbody>
+      ${DB.candidates.map(c=>{
+        const active = DB.submissions.filter(s=>s.candidateId===c.id && !TERMINAL.includes(s.stage)).length;
+        return `<tr class="tbl-row">
+          <td class="name-cell"><b>${esc(c.name)}</b><small>${esc(c.email)} · ${esc(c.phone)}</small></td>
+          <td>${esc(c.skills)}</td>
+          <td><span class="tag tag-gray">${esc(c.source)}</span></td>
+          <td>${c.resumeUrl? `<a href="${getApiBase()}${esc(c.resumeUrl)}" target="_blank" style="font-size:12px;font-weight:600;color:var(--blue);">&#128196; View</a>` : `<span style="font-size:12px;color:var(--steel-light);">Not uploaded</span>`}</td>
+          <td>${active} pipeline${active===1?'':'s'}</td>
+          <td class="row-actions">
+            <button class="icon-btn" onclick="openCandidateDetail('${c.id}')">&#128065;</button>
+            ${canEdit?`<button class="icon-btn" onclick="openCandModal('${c.id}')">&#9998;</button>`:''}
+          </td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>` : emptyState('No candidates yet. Add your first candidate to start submitting them.')}
+  </div>`;
+}
+function openCandModal(id){
+  const c = id ? DB.candidates.find(x=>x.id===id) : {name:'',email:'',phone:'',skills:'',source:'LinkedIn'};
+  openModal(id?'Edit Candidate':'Add Candidate', [
+    {key:'name', label:'Full Name', required:true},
+    {key:'email', label:'Email'},
+    {key:'phone', label:'Phone'},
+    {key:'skills', label:'Skills (comma separated)'},
+    {key:'source', label:'Source', type:'select', options:['LinkedIn','Naukri','Referral','Job Portal','Walk-in','Other']}
+  ], c, (vals)=>{
+    if(id){ Object.assign(c, vals); }
+    else { const nc={id:uid('cd'), ...vals}; DB.candidates.push(nc); logActivity(nc.id,'Candidate added to database.'); }
+    persist(); renderRoute(); showToast('Candidate saved.');
+  });
+}
+function openCandidateDetail(id){
+  const c = DB.candidates.find(x=>x.id===id);
+  const subs = DB.submissions.filter(s=>s.candidateId===id);
+  const tl = DB.activity.filter(a=>a.candidateId===id).sort((a,b)=> new Date(b.ts)-new Date(a.ts)).slice(0,25);
+  const overlay = document.getElementById('modalOverlay'); const box=document.getElementById('modalBox');
+  box.innerHTML = `
+    <div class="modal-title">${esc(c.name)}<button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div style="font-size:13px;color:var(--steel);margin-bottom:14px;">${esc(c.email)} · ${esc(c.phone)} · ${esc(c.skills)}</div>
+    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--steel-light);margin-bottom:8px;">Resume</div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+      ${c.resumeUrl? `<a href="${getApiBase()}${esc(c.resumeUrl)}" target="_blank" class="btn btn-ghost btn-sm">&#128196; View Resume</a>` : `<span style="font-size:13px;color:var(--steel);">No resume uploaded yet.</span>`}
+      <button class="btn btn-ghost btn-sm" onclick="triggerResumeUpload('${c.id}')" id="resumeUploadBtn">${c.resumeUrl?'Replace':'Upload'}</button>
+      <input type="file" id="resumeFileInput" accept=".pdf,.doc,.docx,.rtf,.txt" style="display:none" onchange="handleResumeFileChosen('${c.id}')">
+    </div>
+    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--steel-light);margin-bottom:8px;">Pipelines</div>
+    ${subs.length? subs.map(s=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--paper-2);font-size:13px;"><span>${esc(reqTitle(s.requirementId))}</span>${stageTag(s.stage)}</div>`).join('') : `<div style="font-size:13px;color:var(--steel);margin-bottom:10px;">Not yet submitted to any requirement.</div>`}
+    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--steel-light);margin:16px 0 4px;">Activity Timeline</div>
+    <div class="timeline">${tl.length? tl.map(a=>`<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-body">${esc(a.text)} <span style="color:var(--steel);font-size:11.5px;">— ${esc(userName(a.actor))}</span></div><div class="tl-time">${new Date(a.ts).toLocaleString('en-IN')}</div></div></div>`).join('') : '<div style="font-size:13px;color:var(--steel);">No activity logged yet.</div>'}</div>
+    <div class="modal-actions"><button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Close</button></div>
+  `;
+  overlay.classList.add('active');
+}
+function triggerResumeUpload(candidateId){
+  document.getElementById('resumeFileInput').click();
+}
+async function handleResumeFileChosen(candidateId){
+  const input = document.getElementById('resumeFileInput');
+  const file = input.files[0];
+  if(!file) return;
+  const btn = document.getElementById('resumeUploadBtn');
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Uploading…'; btn.disabled = true;
+  try{
+    const formData = new FormData();
+    formData.append('candidateId', candidateId);
+    formData.append('resume', file);
+    const res = await fetch(getApiBase()+'/api/resumes/upload', { method:'POST', body: formData });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Upload failed.');
+    const c = DB.candidates.find(x=>x.id===candidateId);
+    if(c){ c.resumeUrl = data.url; logActivity(candidateId, `Resume uploaded (${file.name}).`); }
+    await persist();
+    showToast('Resume uploaded.');
+    openCandidateDetail(candidateId);
+  }catch(e){
+    console.error(e);
+    showToast(e.message || 'Resume upload failed — check server connection.');
+    btn.textContent = originalLabel; btn.disabled = false;
+  }
+}
+
+/* ============================= SUBMISSIONS ============================= */
+function renderSubmissions(){
+  const canEdit = ['superadmin','head','teamlead','recruiter'].includes(CURRENT_USER.role);
+  let subs = DB.submissions;
+  if(CURRENT_USER.role==='recruiter') subs = subs.filter(s=>s.recruiter===CURRENT_USER.username);
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Submissions</div><div class="page-sub">${CURRENT_USER.role==='recruiter'?'Your submissions.':'Every candidate submitted against a requirement.'}</div></div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(subs.map(s=>({candidate:candName(s.candidateId),requirement:reqTitle(s.requirementId),recruiter:userName(s.recruiter),stage:s.stage,created:s.createdAt}))).replace(/'/g,"&#39;")}, "submissions.csv")'>Export CSV</button>
+      ${canEdit? `<button class="btn btn-amber" onclick="openSubModal()">+ New Submission</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    ${subs.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Recruiter</th><th>Stage</th><th>Submitted</th><th></th></tr></thead><tbody>
+      ${subs.slice().sort((a,b)=> new Date(b.updatedAt)-new Date(a.updatedAt)).map(s=>`
+        <tr class="tbl-row">
+          <td class="name-cell"><b>${esc(candName(s.candidateId))}</b></td>
+          <td>${esc(reqTitle(s.requirementId))}</td>
+          <td>${esc(userName(s.recruiter))}</td>
+          <td>${stageTag(s.stage)}</td>
+          <td>${fmtDate(s.createdAt)}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openSubModal('${s.id}')">&#9998;</button>`:''}</td>
+        </tr>`).join('')}
+      </tbody></table>` : emptyState('No submissions yet. Submit a candidate against a requirement to begin tracking.')}
+  </div>`;
+}
+function openSubModal(id){
+  const s = id ? DB.submissions.find(x=>x.id===id) : {candidateId:DB.candidates[0]?.id||'', requirementId:DB.requirements[0]?.id||'', recruiter:CURRENT_USER.username, stage:'Sourced'};
+  openModal(id?'Edit Submission':'New Submission', [
+    {key:'candidateId', label:'Candidate', type:'select', options:DB.candidates.map(c=>c.id), required:true},
+    {key:'requirementId', label:'Requirement', type:'select', options:DB.requirements.map(r=>r.id), required:true},
+    {key:'recruiter', label:'Recruiter', type:'select', options:recruiterOptions().map(u=>u.username)},
+    {key:'stage', label:'Stage', type:'select', options:STAGES.concat(TERMINAL)}
+  ], s, (vals)=>{
+    const prevStage = s.stage;
+    if(id){ Object.assign(s, vals); s.updatedAt=nowIso(); if(prevStage!==vals.stage) logActivity(s.candidateId, `Stage changed from "${prevStage}" to "${vals.stage}".`); }
+    else { const ns={id:uid('sb'), ...vals, createdAt:nowIso(), updatedAt:nowIso()}; DB.submissions.push(ns); logActivity(ns.candidateId, `Submitted for "${reqTitle(ns.requirementId)}".`); }
+    persist(); renderRoute(); showToast('Submission saved.');
+  });
+  setTimeout(()=>{
+    const c=document.getElementById('mf_candidateId'); if(c) Array.from(c.options).forEach(o=>o.textContent=candName(o.value));
+    const r=document.getElementById('mf_requirementId'); if(r) Array.from(r.options).forEach(o=>o.textContent=reqTitle(o.value));
+    const rc=document.getElementById('mf_recruiter'); if(rc) Array.from(rc.options).forEach(o=>o.textContent=userName(o.value));
+  },0);
+}
+
+/* ============================= PIPELINE (KANBAN) ============================= */
+function renderPipeline(){
+  let subs = DB.submissions.filter(s=>!TERMINAL.includes(s.stage));
+  if(CURRENT_USER.role==='recruiter') subs = subs.filter(s=>s.recruiter===CURRENT_USER.username);
+  if(PIPELINE_FILTER!=='all') subs = subs.filter(s=>s.requirementId===PIPELINE_FILTER);
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Pipeline</div><div class="page-sub">Drag candidates through the process, requirement by requirement.</div></div>
+    <div class="toolbar">
+      <select class="select-sm" onchange="PIPELINE_FILTER=this.value; renderRoute();">
+        <option value="all">All Requirements</option>
+        ${DB.requirements.map(r=>`<option value="${r.id}" ${PIPELINE_FILTER===r.id?'selected':''}>${esc(r.title)}</option>`).join('')}
+      </select>
+    </div>
+  </div>
+  <div class="kanban">
+    ${STAGES.map(stage=>{
+      const cards = subs.filter(s=>s.stage===stage);
+      return `<div class="kcol">
+        <div class="kcol-head"><span class="kcol-title">${stage}</span><span class="kcol-count">${cards.length}</span></div>
+        ${cards.map(s=>{
+          const idx = STAGES.indexOf(stage);
+          const nextStage = STAGES[idx+1];
+          return `<div class="kcard" onclick="openCandidateDetail('${s.candidateId}')">
+            <div class="kcard-name">${esc(candName(s.candidateId))}</div>
+            <div class="kcard-req">${esc(reqTitle(s.requirementId))}</div>
+            <div class="kcard-foot">
+              <span class="kcard-rec">${esc(userName(s.recruiter))}</span>
+              <span class="kcard-move" onclick="event.stopPropagation()">
+                ${nextStage?`<button class="mini-btn" title="Advance to ${nextStage}" onclick="moveStage('${s.id}','${nextStage}')">&#8594;</button>`:''}
+                <button class="mini-btn rej" title="Reject" onclick="moveStage('${s.id}','Rejected')">&#10005;</button>
+              </span>
+            </div>
+          </div>`;
+        }).join('') || `<div style="font-size:12px;color:var(--steel-light);text-align:center;padding:14px 0;">Empty</div>`}
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function moveStage(subId, newStage){
+  const s = subById(subId); if(!s) return;
+  const prev = s.stage; s.stage = newStage; s.updatedAt = nowIso();
+  logActivity(s.candidateId, `Stage changed from "${prev}" to "${newStage}".`);
+  persist(); renderRoute(); showToast(`Moved to ${newStage}.`);
+}
+
+/* ============================= INTERVIEWS ============================= */
+function renderInterviews(){
+  const canEdit = ['superadmin','head','teamlead','recruiter'].includes(CURRENT_USER.role);
+  let list = DB.interviews;
+  if(CURRENT_USER.role==='recruiter'){ const mySubIds = DB.submissions.filter(s=>s.recruiter===CURRENT_USER.username).map(s=>s.id); list = list.filter(i=>mySubIds.includes(i.submissionId)); }
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Interviews</div><div class="page-sub">Every round, scheduled or completed.</div></div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(i=>({candidate:candName(subById(i.submissionId)?.candidateId), round:i.round, date:i.date, interviewer:i.interviewer, status:i.status, outcome:i.outcome}))).replace(/'/g,"&#39;")}, "interviews.csv")'>Export CSV</button>
+      ${canEdit? `<button class="btn btn-amber" onclick="openInterviewModal()">+ Schedule Interview</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Round</th><th>Date</th><th>Interviewer</th><th>Status</th><th>Outcome</th><th></th></tr></thead><tbody>
+      ${list.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).map(i=>{
+        const s = subById(i.submissionId);
+        return `<tr class="tbl-row">
+          <td class="name-cell"><b>${esc(s?candName(s.candidateId):'—')}</b></td>
+          <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
+          <td>${esc(i.round)}</td>
+          <td>${fmtDate(i.date)}</td>
+          <td>${esc(i.interviewer)}</td>
+          <td><span class="tag ${i.status==='Completed'?'tag-green':i.status==='No-show'?'tag-red':'tag-blue'}">${i.status}</span></td>
+          <td>${i.outcome?`<span class="tag ${i.outcome==='Selected'?'tag-green':i.outcome==='Rejected'?'tag-red':'tag-gray'}">${i.outcome}</span>`:'—'}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openInterviewModal('${i.id}')">&#9998;</button>`:''}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>` : emptyState('No interviews scheduled yet.')}
+  </div>`;
+}
+function openInterviewModal(id){
+  const eligibleSubs = DB.submissions.filter(s=>!TERMINAL.includes(s.stage));
+  const i = id ? DB.interviews.find(x=>x.id===id) : {submissionId:eligibleSubs[0]?.id||'', round:'L1 - Technical', date:todayIso(), interviewer:'', status:'Scheduled', outcome:'Pending', feedback:''};
+  openModal(id?'Edit Interview':'Schedule Interview', [
+    {key:'submissionId', label:'Candidate / Requirement', type:'select', options:eligibleSubs.map(s=>s.id), required:true},
+    {key:'round', label:'Round'},
+    {key:'date', label:'Date', type:'date'},
+    {key:'interviewer', label:'Interviewer'},
+    {key:'status', label:'Status', type:'select', options:INTERVIEW_STATUS},
+    {key:'outcome', label:'Outcome', type:'select', options:INTERVIEW_OUTCOME},
+    {key:'feedback', label:'Feedback', type:'textarea'}
+  ], i, (vals)=>{
+    const sub = subById(vals.submissionId);
+    if(id){ Object.assign(i, vals); }
+    else { const ni={id:uid('iv'), ...vals}; DB.interviews.push(ni); }
+    if(sub) logActivity(sub.candidateId, `Interview "${vals.round}" marked ${vals.status}${vals.outcome&&vals.outcome!=='Pending'?` — outcome: ${vals.outcome}`:''}.`);
+    if(sub && vals.status==='Scheduled' && sub.stage!=='Interview' && !TERMINAL.includes(sub.stage)){ sub.stage='Interview'; sub.updatedAt=nowIso(); }
+    persist(); renderRoute(); showToast('Interview saved.');
+  });
+  setTimeout(()=>{
+    const sel = document.getElementById('mf_submissionId');
+    if(sel) Array.from(sel.options).forEach(o=>{ const s=subById(o.value); o.textContent = s? `${candName(s.candidateId)} — ${reqTitle(s.requirementId)}` : o.value; });
+  },0);
+}
+
+/* ============================= OFFERS ============================= */
+function renderOffers(){
+  const canEdit = ['superadmin','head','teamlead','recruiter'].includes(CURRENT_USER.role);
+  let list = DB.offers;
+  if(CURRENT_USER.role==='recruiter'){ const mySubIds = DB.submissions.filter(s=>s.recruiter===CURRENT_USER.username).map(s=>s.id); list = list.filter(o=>mySubIds.includes(o.submissionId)); }
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Offers</div><div class="page-sub">Compensation extended and offer status.</div></div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(o=>({candidate:candName(subById(o.submissionId)?.candidateId), ctc:o.ctc, joiningDate:o.joiningDate, status:o.status}))).replace(/'/g,"&#39;")}, "offers.csv")'>Export CSV</button>
+      ${canEdit? `<button class="btn btn-amber" onclick="openOfferModal()">+ New Offer</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>CTC</th><th>Target Joining</th><th>Status</th><th></th></tr></thead><tbody>
+      ${list.map(o=>{
+        const s = subById(o.submissionId);
+        return `<tr class="tbl-row">
+          <td class="name-cell"><b>${esc(s?candName(s.candidateId):'—')}</b></td>
+          <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
+          <td class="mono">${esc(o.ctc)}</td>
+          <td>${fmtDate(o.joiningDate)}</td>
+          <td><span class="tag ${o.status==='Accepted'?'tag-green':o.status==='Declined'||o.status==='Withdrawn'?'tag-red':'tag-amber'}">${o.status}</span></td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openOfferModal('${o.id}')">&#9998;</button>`:''}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>` : emptyState('No offers extended yet.')}
+  </div>`;
+}
+function openOfferModal(id){
+  const eligibleSubs = DB.submissions.filter(s=>['Interview','Offer'].includes(s.stage));
+  const o = id ? DB.offers.find(x=>x.id===id) : {submissionId:eligibleSubs[0]?.id||'', ctc:'', joiningDate:todayIso(), status:'Extended', extendedDate:todayIso()};
+  openModal(id?'Edit Offer':'New Offer', [
+    {key:'submissionId', label:'Candidate / Requirement', type:'select', options:eligibleSubs.map(s=>s.id), required:true},
+    {key:'ctc', label:'CTC Offered', required:true},
+    {key:'joiningDate', label:'Target Joining Date', type:'date'},
+    {key:'status', label:'Status', type:'select', options:OFFER_STATUS}
+  ], o, (vals)=>{
+    const sub = subById(vals.submissionId);
+    if(id){ Object.assign(o, vals); }
+    else { const no={id:uid('of'), extendedDate:nowIso(), ...vals}; DB.offers.push(no); }
+    if(sub){ logActivity(sub.candidateId, `Offer ${vals.status.toLowerCase()} — CTC ${vals.ctc}.`); if(sub.stage!=='Offer' && vals.status==='Extended'){ sub.stage='Offer'; sub.updatedAt=nowIso(); } }
+    persist(); renderRoute(); showToast('Offer saved.');
+  });
+  setTimeout(()=>{
+    const sel = document.getElementById('mf_submissionId');
+    if(sel) Array.from(sel.options).forEach(o2=>{ const s=subById(o2.value); o2.textContent = s? `${candName(s.candidateId)} — ${reqTitle(s.requirementId)}` : o2.value; });
+  },0);
+}
+
+/* ============================= JOINING ============================= */
+function renderJoining(){
+  const canEdit = ['superadmin','head','teamlead','recruiter'].includes(CURRENT_USER.role);
+  let list = DB.joinings;
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Joining</div><div class="page-sub">Final confirmation that closes the loop.</div></div>
+    <div class="toolbar">
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(j=>({candidate:candName(subById(j.submissionId)?.candidateId), actualDate:j.actualDate, status:j.status}))).replace(/'/g,"&#39;")}, "joining.csv")'>Export CSV</button>
+      ${canEdit? `<button class="btn btn-amber" onclick="openJoinModal()">+ Log Joining</button>`:''}
+    </div>
+  </div>
+  <div class="card">
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
+      ${list.map(j=>{
+        const s = subById(j.submissionId);
+        return `<tr class="tbl-row">
+          <td class="name-cell"><b>${esc(s?candName(s.candidateId):'—')}</b></td>
+          <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
+          <td>${fmtDate(j.actualDate)}</td>
+          <td><span class="tag ${j.status==='Joined'?'tag-green':j.status==='No-show'?'tag-red':'tag-amber'}">${j.status}</span></td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openJoinModal('${j.id}')">&#9998;</button>`:''}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>` : emptyState('No joinings logged yet.')}
+  </div>`;
+}
+function openJoinModal(id){
+  const eligibleSubs = DB.submissions.filter(s=>['Offer','Joined'].includes(s.stage));
+  const j = id ? DB.joinings.find(x=>x.id===id) : {submissionId:eligibleSubs[0]?.id||'', actualDate:todayIso(), status:'Pending'};
+  openModal(id?'Edit Joining':'Log Joining', [
+    {key:'submissionId', label:'Candidate / Requirement', type:'select', options:eligibleSubs.map(s=>s.id), required:true},
+    {key:'actualDate', label:'Joining Date', type:'date'},
+    {key:'status', label:'Status', type:'select', options:JOIN_STATUS}
+  ], j, (vals)=>{
+    const sub = subById(vals.submissionId);
+    if(id){ Object.assign(j, vals); }
+    else { const nj={id:uid('jn'), ...vals}; DB.joinings.push(nj); }
+    if(sub){ logActivity(sub.candidateId, `Joining status: ${vals.status} (${vals.actualDate}).`); if(vals.status==='Joined' && sub.stage!=='Joined'){ sub.stage='Joined'; sub.updatedAt=nowIso(); } }
+    persist(); renderRoute(); showToast('Joining record saved.');
+  });
+  setTimeout(()=>{
+    const sel = document.getElementById('mf_submissionId');
+    if(sel) Array.from(sel.options).forEach(o=>{ const s=subById(o.value); o.textContent = s? `${candName(s.candidateId)} — ${reqTitle(s.requirementId)}` : o.value; });
+  },0);
+}
+
+/* ============================= PERFORMANCE ============================= */
+function recruiterScores(weights){
+  const recruiters = DB.users.filter(u=>u.role==='recruiter'||u.role==='teamlead'||u.role==='head'||u.role==='superadmin');
+  const scored = recruiters.map(u=>{
+    const subs = DB.submissions.filter(s=>s.recruiter===u.username).length;
+    const ivs = DB.interviews.filter(i=>{ const s=subById(i.submissionId); return s && s.recruiter===u.username; }).length;
+    const offs = DB.offers.filter(o=>{ const s=subById(o.submissionId); return s && s.recruiter===u.username; }).length;
+    const joins = DB.joinings.filter(j=>{ const s=subById(j.submissionId); return s && s.recruiter===u.username; }).length;
+    const score = subs*weights.submission + ivs*weights.interview + offs*weights.offer + joins*weights.join;
+    return {username:u.username, name:u.name, subs,ivs,offs,joins,score};
+  }).filter(r=>r.subs+r.ivs+r.offs+r.joins>0);
+  const max = Math.max(1, ...scored.map(s=>s.score));
+  scored.forEach(s=> s.pct = Math.round((s.score/max)*100));
+  return scored.sort((a,b)=>b.score-a.score);
+}
+function renderPerformance(){
+  const weights = DB.settings.weights;
+  const scored = recruiterScores(weights);
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Recruiter Performance</div><div class="page-sub">Weighted score: submission×${weights.submission} + interview×${weights.interview} + offer×${weights.offer} + join×${weights.join}</div></div>
+    <div class="toolbar"><button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(scored).replace(/'/g,"&#39;")}, "performance.csv")'>Export CSV</button></div>
+  </div>
+  <div class="card">
+    ${scored.length? `<table><thead><tr><th>Recruiter</th><th>Submissions</th><th>Interviews</th><th>Offers</th><th>Joins</th><th>Score</th></tr></thead><tbody>
+      ${scored.map(s=>`<tr class="tbl-row">
+        <td class="name-cell"><b>${esc(s.name)}</b></td>
+        <td>${s.subs}</td><td>${s.ivs}</td><td>${s.offs}</td><td>${s.joins}</td>
+        <td><div style="display:flex;align-items:center;gap:8px;"><div class="perf-bar-track" style="width:100px;"><div class="perf-bar-fill" style="width:${s.pct}%"></div></div><b class="mono">${s.score}</b></div></td>
+      </tr>`).join('')}
+      </tbody></table>` : emptyState('No recruiter activity logged yet.')}
+  </div>`;
+}
+
+/* ============================= SETTINGS ============================= */
+function renderSettings(){
+  const w = DB.settings.weights;
+  const isSuper = CURRENT_USER.role==='superadmin';
+  return `
+  <div class="topbar"><div><div class="page-title">Settings</div><div class="page-sub">Scoring weights and team access.</div></div></div>
+  <div class="card">
+    <div class="card-title">Performance Score Weights</div>
+    <div class="section-note">Score = submissions × w1 + interviews × w2 + offers × w3 + joins × w4. Adjust to match what your team values most.</div>
+    <div class="weights-grid">
+      <div class="field"><label>Per Submission</label><input type="number" id="w_submission" value="${w.submission}"></div>
+      <div class="field"><label>Per Interview</label><input type="number" id="w_interview" value="${w.interview}"></div>
+      <div class="field"><label>Per Offer</label><input type="number" id="w_offer" value="${w.offer}"></div>
+      <div class="field"><label>Per Join</label><input type="number" id="w_join" value="${w.join}"></div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:10px;width:auto;padding:10px 20px;" onclick="saveWeights()">Save Weights</button>
+  </div>
+  ${isSuper?`<div class="card">
+    <div class="card-title">Data & Backup</div>
+    <div class="section-note">All data lives on your central server (${esc(getApiBase())}) and is shared by everyone using this app. Back it up regularly — resetting affects every user immediately.</div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn btn-ghost" onclick="downloadBackup()">Download Backup (JSON)</button>
+      <button class="btn btn-danger" onclick="resetAllData()">Reset All Data</button>
+    </div>
+  </div>`:''}
+  <div class="card">
+    <div class="card-title">Team Members ${isSuper?`<button class="btn btn-amber btn-sm" onclick="openUserModal()">+ Add User</button>`:''}</div>
+    <table><thead><tr><th>Name</th><th>Username</th><th>Role</th>${isSuper?'<th></th>':''}</tr></thead><tbody>
+      ${DB.users.map(u=>`<tr class="tbl-row"><td class="name-cell"><b>${esc(u.name)}</b></td><td class="mono">${esc(u.username)}</td><td><span class="tag tag-blue">${ROLES[u.role].label}</span></td>${isSuper?`<td class="row-actions"><button class="icon-btn" onclick="openUserModal('${u.username}')">&#9998;</button></td>`:''}</tr>`).join('')}
+    </tbody></table>
+  </div>`;
+}
+function saveWeights(){
+  DB.settings.weights = {
+    submission:Number(document.getElementById('w_submission').value)||0,
+    interview:Number(document.getElementById('w_interview').value)||0,
+    offer:Number(document.getElementById('w_offer').value)||0,
+    join:Number(document.getElementById('w_join').value)||0
+  };
+  persist(); showToast('Weights updated.'); renderRoute();
+}
+function openUserModal(username){
+  const u = username ? DB.users.find(x=>x.username===username) : {username:'', password:'', role:'recruiter', name:''};
+  openModal(username?'Edit User':'Add User', [
+    {key:'name', label:'Full Name', required:true},
+    {key:'username', label:'Username', required:true},
+    {key:'password', label:'Password', required:true},
+    {key:'role', label:'Role', type:'select', options:Object.keys(ROLES)}
+  ], u, (vals)=>{
+    if(username){ Object.assign(u, vals); }
+    else { if(DB.users.some(x=>x.username===vals.username)){ showToast('Username already exists.'); return; } DB.users.push({...vals}); }
+    persist(); renderRoute(); showToast('User saved.');
+  });
+  setTimeout(()=>{ const sel=document.getElementById('mf_role'); if(sel) Array.from(sel.options).forEach(o=> o.textContent = ROLES[o.value].label); },0);
+}
+
+function downloadBackup(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `recruitops-backup-${todayIso()}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  showToast('Backup downloaded.');
+}
+function resetAllData(){
+  if(!confirm('This permanently deletes all data on the central server (clients, requirements, candidates, pipeline, offers) for EVERY user and restores the demo dataset. This cannot be undone. Continue?')) return;
+  DB = seedDB();
+  persist();
+  renderRoute();
+  showToast('All data reset to demo dataset.');
+}
+
+/* ============================= INIT ============================= */
+(async function init(){
+  checkServerStatus();
+  try{
+    await loadDB();
+  }catch(e){
+    console.error(e);
+    document.getElementById('loginError').textContent = 'Cannot reach the central server. Check the server URL below, or ask your admin to start it.';
+  }
+  document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  document.getElementById('loginUser').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+})();
+</script>
+</body>
+</html>
