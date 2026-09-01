@@ -1014,31 +1014,34 @@ function renderSubmissions(){
   <div class="topbar">
     <div><div class="page-title">Submissions</div><div class="page-sub">${CURRENT_USER.role==='recruiter'?'Your submissions.':'Every candidate submitted against a requirement.'}</div></div>
     <div class="toolbar">
-      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(subs.map(s=>({candidate:candName(s.candidateId),requirement:reqTitle(s.requirementId),recruiter:userName(s.recruiter),stage:s.stage,created:s.createdAt}))).replace(/'/g,"&#39;")}, "submissions.csv")'>Export CSV</button>
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(subs.map(s=>({candidate:candName(s.candidateId),requirement:reqTitle(s.requirementId),recruiter:userName(s.recruiter),stage:s.stage,submittedDate:s.submittedDate||s.createdAt,selectionDate:s.selectionDate||""}))).replace(/'/g,"&#39;")}, "submissions.csv")'>Export CSV</button>
       ${canEdit? `<button class="btn btn-amber" onclick="openSubModal()">+ New Submission</button>`:''}
     </div>
   </div>
   <div class="card">
-    ${subs.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Recruiter</th><th>Stage</th><th>Submitted</th><th></th></tr></thead><tbody>
+    ${subs.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Recruiter</th><th>Stage</th><th>Submitted Date</th><th>Selection Date</th><th></th></tr></thead><tbody>
       ${subs.slice().sort((a,b)=> new Date(b.updatedAt)-new Date(a.updatedAt)).map(s=>`
         <tr class="tbl-row">
           <td class="name-cell"><b>${esc(candName(s.candidateId))}</b></td>
           <td>${esc(reqTitle(s.requirementId))}</td>
           <td>${esc(userName(s.recruiter))}</td>
           <td>${stageTag(s.stage)}</td>
-          <td>${fmtDate(s.createdAt)}</td>
+          <td>${s.submittedDate? fmtDate(s.submittedDate) : fmtDate(s.createdAt)}</td>
+          <td>${s.selectionDate? fmtDate(s.selectionDate) : '—'}</td>
           <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openSubModal('${s.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteSubmission('${s.id}')">&#128465;</button>`:''}</td>
         </tr>`).join('')}
       </tbody></table>` : emptyState('No submissions yet. Submit a candidate against a requirement to begin tracking.')}
   </div>`;
 }
 function openSubModal(id, prefillCandidateId){
-  const s = id ? DB.submissions.find(x=>x.id===id) : {candidateId:prefillCandidateId||DB.candidates[0]?.id||'', requirementId:DB.requirements[0]?.id||'', recruiter:CURRENT_USER.username, stage:'Sourced'};
+  const s = id ? DB.submissions.find(x=>x.id===id) : {candidateId:prefillCandidateId||DB.candidates[0]?.id||'', requirementId:DB.requirements[0]?.id||'', recruiter:CURRENT_USER.username, stage:'Sourced', submittedDate:todayIso(), selectionDate:''};
   openModal(id?'Edit Submission':'New Submission', [
     {key:'candidateId', label:'Candidate', type:'select', options:DB.candidates.map(c=>c.id), required:true},
     {key:'requirementId', label:'Requirement', type:'select', options:DB.requirements.map(r=>r.id), required:true},
     {key:'recruiter', label:'Recruiter', type:'select', options:recruiterOptions().map(u=>u.username)},
-    {key:'stage', label:'Stage', type:'select', options:STAGES.concat(TERMINAL)}
+    {key:'stage', label:'Stage', type:'select', options:STAGES.concat(TERMINAL)},
+    {key:'submittedDate', label:'Submitted Date', type:'date'},
+    {key:'selectionDate', label:'Selection Date (leave blank until selected)', type:'date'}
   ], s, (vals)=>{
     const prevStage = s.stage;
     if(id){ Object.assign(s, vals); s.updatedAt=nowIso(); if(prevStage!==vals.stage) logActivity(s.candidateId, `Stage changed from "${prevStage}" to "${vals.stage}".`); }
@@ -1173,6 +1176,7 @@ function openInterviewModal(id){
     else { const ni={id:uid('iv'), ...vals}; DB.interviews.push(ni); }
     if(sub) logActivity(sub.candidateId, `Interview "${vals.round}" marked ${vals.status}${vals.outcome&&vals.outcome!=='Pending'?` — outcome: ${vals.outcome}`:''}.`);
     if(sub && vals.status==='Scheduled' && sub.stage!=='Interview' && !TERMINAL.includes(sub.stage)){ sub.stage='Interview'; sub.updatedAt=nowIso(); }
+    if(sub && vals.outcome==='Selected' && !sub.selectionDate){ sub.selectionDate = todayIso(); sub.updatedAt=nowIso(); logActivity(sub.candidateId, `Selection Date recorded: ${sub.selectionDate}.`); }
     persist(); renderRoute(); showToast('Interview saved.');
   });
   setTimeout(()=>{
@@ -1247,17 +1251,18 @@ function renderJoining(){
   <div class="topbar">
     <div><div class="page-title">Joining</div><div class="page-sub">Final confirmation that closes the loop.</div></div>
     <div class="toolbar">
-      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(j=>({candidate:candName(subById(j.submissionId)?.candidateId), actualDate:j.actualDate, status:j.status}))).replace(/'/g,"&#39;")}, "joining.csv")'>Export CSV</button>
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(j=>({candidate:candName(subById(j.submissionId)?.candidateId), sourcedBy:userName(subById(j.submissionId)?.recruiter||""), actualDate:j.actualDate, status:j.status}))).replace(/'/g,"&#39;")}, "joining.csv")'>Export CSV</button>
       ${canEdit? `<button class="btn btn-amber" onclick="openJoinModal()">+ Log Joining</button>`:''}
     </div>
   </div>
   <div class="card">
-    ${list.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Sourced By</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(j=>{
         const s = subById(j.submissionId);
         return `<tr class="tbl-row">
           <td class="name-cell"><b>${esc(s?candName(s.candidateId):'—')}</b></td>
           <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
+          <td>${s?esc(userName(s.recruiter)):'—'}</td>
           <td>${fmtDate(j.actualDate)}</td>
           <td><span class="tag ${j.status==='Joined'?'tag-green':j.status==='No-show'?'tag-red':'tag-amber'}">${j.status}</span></td>
           <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openJoinModal('${j.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteJoining('${j.id}')">&#128465;</button>`:''}</td>
