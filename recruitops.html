@@ -267,17 +267,18 @@ const OFFER_STATUS = ['Extended','Accepted','Declined','Withdrawn'];
 const JOIN_STATUS = ['Pending','Joined','No-show','Deferred'];
 
 const ROLES = {
-  superadmin:{label:'Super Admin', nav:['dashboard','search','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
-  head:{label:'Recruitment Head', nav:['dashboard','search','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
-  teamlead:{label:'Team Leader', nav:['dashboard','search','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance']},
+  superadmin:{label:'Super Admin', nav:['dashboard','search','clients','clientDashboard','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
+  head:{label:'Recruitment Head', nav:['dashboard','search','clients','clientDashboard','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
+  teamlead:{label:'Team Leader', nav:['dashboard','search','requirements','clientDashboard','candidates','pipeline','submissions','interviews','offers','joining','performance']},
   recruiter:{label:'Recruiter', nav:['dashboard','search','candidates','pipeline','submissions','interviews','offers','joining']},
-  salesam:{label:'Sales / AM', nav:['dashboard','clients','requirements']},
-  management:{label:'Management', nav:['dashboard','performance']}
+  salesam:{label:'Sales / AM', nav:['dashboard','clients','clientDashboard','requirements']},
+  management:{label:'Management', nav:['dashboard','clientDashboard','performance']}
 };
 const NAV_META = {
   dashboard:{label:'Dashboard', ico:'&#9673;'},
   search:{label:'Search Candidates', ico:'&#128269;'},
   clients:{label:'Clients', ico:'&#9635;'},
+  clientDashboard:{label:'Client Dashboard', ico:'&#128202;'},
   requirements:{label:'Requirements', ico:'&#9776;'},
   candidates:{label:'Candidates', ico:'&#9787;'},
   pipeline:{label:'Pipeline', ico:'&#8942;'},
@@ -295,6 +296,7 @@ let CURRENT_USER = null;
 let ROUTE = 'dashboard';
 let PIPELINE_FILTER = 'all';
 let PERFORMANCE_MONTH = new Date().toISOString().slice(0,7);
+let CLIENT_DASH_MONTH = new Date().toISOString().slice(0,7);
 let SEARCH_QUERY = '';
 
 function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -461,7 +463,7 @@ function renderNav(){
 function goRoute(key){ ROUTE=key; renderNav(); renderRoute(); }
 function renderRoute(){
   const fn = {
-    dashboard:renderDashboard, search:renderSearch, clients:renderClients, requirements:renderRequirements,
+    dashboard:renderDashboard, search:renderSearch, clients:renderClients, clientDashboard:renderClientDashboard, requirements:renderRequirements,
     candidates:renderCandidates, pipeline:renderPipeline, submissions:renderSubmissions,
     interviews:renderInterviews, offers:renderOffers, joining:renderJoining,
     performance:renderPerformance, settings:renderSettings
@@ -755,6 +757,84 @@ function deleteClient(clientId){
   DB.requirements = DB.requirements.filter(r=>r.clientId!==clientId);
   DB.clients = DB.clients.filter(x=>x.id!==clientId);
   persist(); renderRoute(); showToast('Client deleted.');
+}
+
+/* ============================= CLIENT DASHBOARD (MONTHLY) ============================= */
+function clientMonthlyStats(monthStr){
+  return DB.clients.map(client=>{
+    const reqIds = DB.requirements.filter(r=>r.clientId===client.id).map(r=>r.id);
+    const clientSubs = DB.submissions.filter(s=>reqIds.includes(s.requirementId));
+
+    const totalSubmissions = clientSubs.filter(s=> (s.createdAt||'').slice(0,7)===monthStr).length;
+
+    const joined = DB.joinings.filter(j=>{
+      if(j.status!=='Joined' || !j.actualDate || j.actualDate.slice(0,7)!==monthStr) return false;
+      const s = subById(j.submissionId);
+      return s && reqIds.includes(s.requirementId);
+    }).length;
+
+    const pipelineCount = clientSubs.filter(s=> !TERMINAL.includes(s.stage) && s.stage!=='Joined').length;
+
+    const dropped = clientSubs.filter(s=> TERMINAL.includes(s.stage) && (s.updatedAt||'').slice(0,7)===monthStr).length;
+
+    return { client, totalSubmissions, joined, pipelineCount, dropped };
+  }).sort((a,b)=> b.totalSubmissions - a.totalSubmissions);
+}
+function shiftClientDashMonth(delta){
+  const [y,m] = CLIENT_DASH_MONTH.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  CLIENT_DASH_MONTH = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderRoute();
+}
+function handleClientDashMonthPicked(val){
+  if(!val) return;
+  CLIENT_DASH_MONTH = val;
+  renderRoute();
+}
+function renderClientDashboard(){
+  const stats = clientMonthlyStats(CLIENT_DASH_MONTH);
+  const [cy, cm] = CLIENT_DASH_MONTH.split('-').map(Number);
+  const monthLabel = new Date(cy, cm-1, 1).toLocaleDateString('en-IN', {month:'long', year:'numeric'});
+  const isCurrentMonth = CLIENT_DASH_MONTH === new Date().toISOString().slice(0,7);
+  const totals = stats.reduce((acc,s)=>({
+    totalSubmissions: acc.totalSubmissions + s.totalSubmissions,
+    joined: acc.joined + s.joined,
+    pipelineCount: acc.pipelineCount + s.pipelineCount,
+    dropped: acc.dropped + s.dropped
+  }), {totalSubmissions:0, joined:0, pipelineCount:0, dropped:0});
+
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Client Dashboard</div><div class="page-sub">Submissions, joins, pipeline, and drops — client by client, month by month.</div></div>
+    <div class="toolbar">
+      <button class="icon-btn" title="Previous month" onclick="shiftClientDashMonth(-1)">&#8592;</button>
+      <input type="month" value="${CLIENT_DASH_MONTH}" onchange="handleClientDashMonthPicked(this.value)" class="select-sm" style="padding:6px 8px;">
+      <button class="icon-btn" title="Next month" onclick="shiftClientDashMonth(1)">&#8594;</button>
+      ${!isCurrentMonth?`<button class="btn btn-ghost btn-sm" onclick="handleClientDashMonthPicked('${new Date().toISOString().slice(0,7)}')">This month</button>`:''}
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(stats.map(s=>({client:s.client.name, location:s.client.location||"", totalSubmissions:s.totalSubmissions, joined:s.joined, pipelineCount:s.pipelineCount, dropped:s.dropped}))).replace(/'/g,"&#39;")}, "client-dashboard-${CLIENT_DASH_MONTH}.csv")'>Export CSV</button>
+    </div>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Total Submissions</div><div class="kpi-value">${totals.totalSubmissions}</div><div class="kpi-note">across all clients, ${monthLabel}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Joined Candidates</div><div class="kpi-value">${totals.joined}</div><div class="kpi-note">confirmed joins, ${monthLabel}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Pipeline Count</div><div class="kpi-value">${totals.pipelineCount}</div><div class="kpi-note">currently active (live)</div></div>
+    <div class="kpi-card"><div class="kpi-label">Drop</div><div class="kpi-value">${totals.dropped}</div><div class="kpi-note">rejected/dropped, ${monthLabel}</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">By Client — ${monthLabel}</div>
+    <div class="section-note">"Total Profile Submissions", "Joined Candidates", and "Drop" are scoped to ${monthLabel}. "Pipeline Count" is a live snapshot of candidates currently active in that client's process right now (not month-specific), since a candidate's pipeline stage isn't tracked historically day by day.</div>
+    ${stats.length? `<table><thead><tr><th>Client</th><th>Location</th><th>Total Profile Submissions</th><th>Joined Candidates</th><th>Pipeline Count</th><th>Drop</th></tr></thead><tbody>
+      ${stats.map(s=>`
+        <tr class="tbl-row">
+          <td class="name-cell"><b>${esc(s.client.name)}</b></td>
+          <td>${esc(s.client.location||'—')}</td>
+          <td>${s.totalSubmissions}</td>
+          <td><span class="tag tag-green">${s.joined}</span></td>
+          <td><span class="tag tag-blue">${s.pipelineCount}</span></td>
+          <td>${s.dropped>0?`<span class="tag tag-red">${s.dropped}</span>`:'0'}</td>
+        </tr>`).join('')}
+      </tbody></table>` : emptyState('No clients yet. Add a client to see their monthly numbers here.')}
+  </div>`;
 }
 
 /* ============================= REQUIREMENTS ============================= */
