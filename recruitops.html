@@ -294,6 +294,7 @@ let DB = null;
 let CURRENT_USER = null;
 let ROUTE = 'dashboard';
 let PIPELINE_FILTER = 'all';
+let PERFORMANCE_MONTH = new Date().toISOString().slice(0,7);
 let SEARCH_QUERY = '';
 
 function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -714,29 +715,46 @@ function renderClients(){
     </div>
   </div>
   <div class="card">
-    ${DB.clients.length? `<table><thead><tr><th>Client</th><th>Contact</th><th>Open Requirements</th><th></th></tr></thead><tbody>
+    ${DB.clients.length? `<table><thead><tr><th>Client</th><th>Location</th><th>Contact</th><th>Open Requirements</th><th></th></tr></thead><tbody>
       ${DB.clients.map(c=>{
         const openCount = DB.requirements.filter(r=>r.clientId===c.id && r.status==='Open').length;
         return `<tr class="tbl-row">
           <td class="name-cell"><b>${esc(c.name)}</b></td>
+          <td>${esc(c.location||'—')}</td>
           <td>${esc(c.contact)}</td>
           <td>${openCount}</td>
-          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openClientModal('${c.id}')">&#9998;</button>`:''}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openClientModal('${c.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteClient('${c.id}')">&#128465;</button>`:''}</td>
         </tr>`;
       }).join('')}
       </tbody></table>` : emptyState('No clients yet. Add your first client to open requirements against them.')}
   </div>`;
 }
 function openClientModal(id){
-  const c = id ? DB.clients.find(x=>x.id===id) : {name:'',contact:''};
+  const c = id ? DB.clients.find(x=>x.id===id) : {name:'',location:'',contact:''};
   openModal(id?'Edit Client':'New Client', [
     {key:'name', label:'Client Name', required:true},
+    {key:'location', label:'Location (city)'},
     {key:'contact', label:'Primary Contact'}
   ], c, (vals)=>{
     if(id){ Object.assign(c, vals); }
     else { DB.clients.push({id:uid('cl'), ...vals}); }
     persist(); renderRoute(); showToast('Client saved.');
   });
+}
+function deleteClient(clientId){
+  const c = DB.clients.find(x=>x.id===clientId); if(!c) return;
+  const relatedReqs = DB.requirements.filter(r=>r.clientId===clientId);
+  const relatedSubsCount = relatedReqs.reduce((n,r)=> n + DB.submissions.filter(s=>s.requirementId===r.id).length, 0);
+  const warning = relatedReqs.length
+    ? `Delete "${c.name}"? This also removes ${relatedReqs.length} requirement(s) and ${relatedSubsCount} linked submission(s), along with their interviews, offers, and joining records. This cannot be undone.`
+    : `Delete "${c.name}"? This cannot be undone.`;
+  if(!confirm(warning)) return;
+  relatedReqs.forEach(r=>{
+    DB.submissions.filter(s=>s.requirementId===r.id).forEach(s=>cascadeRemoveSubmission(s.id));
+  });
+  DB.requirements = DB.requirements.filter(r=>r.clientId!==clientId);
+  DB.clients = DB.clients.filter(x=>x.id!==clientId);
+  persist(); renderRoute(); showToast('Client deleted.');
 }
 
 /* ============================= REQUIREMENTS ============================= */
@@ -760,10 +778,21 @@ function renderRequirements(){
           <td>${tagForPriority(r.priority)}</td>
           <td>${tagForStatus(r.status)}</td>
           <td style="width:140px;">${r.status==='Open'?agingRuler(r.openedDate):'—'}</td>
-          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openReqModal('${r.id}')">&#9998;</button>`:''}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openReqModal('${r.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteRequirement('${r.id}')">&#128465;</button>`:''}</td>
         </tr>`).join('')}
       </tbody></table>` : emptyState('No requirements yet. Create one to start sourcing candidates.')}
   </div>`;
+}
+function deleteRequirement(reqId){
+  const r = DB.requirements.find(x=>x.id===reqId); if(!r) return;
+  const relatedSubs = DB.submissions.filter(s=>s.requirementId===reqId);
+  const warning = relatedSubs.length
+    ? `Delete "${r.title}"? This also removes ${relatedSubs.length} linked submission(s), along with their interviews, offers, and joining records. This cannot be undone.`
+    : `Delete "${r.title}"? This cannot be undone.`;
+  if(!confirm(warning)) return;
+  relatedSubs.forEach(s=>cascadeRemoveSubmission(s.id));
+  DB.requirements = DB.requirements.filter(x=>x.id!==reqId);
+  persist(); renderRoute(); showToast('Requirement deleted.');
 }
 function tagForPriority(p){ const m={High:'tag-red',Medium:'tag-amber',Low:'tag-gray'}; return `<span class="tag ${m[p]}">${p}</span>`; }
 function tagForStatus(s){ const m={Open:'tag-green','On Hold':'tag-amber',Closed:'tag-gray'}; return `<span class="tag ${m[s]}">${s}</span>`; }
@@ -812,7 +841,7 @@ function renderCandidates(){
           <td>${active} pipeline${active===1?'':'s'}</td>
           <td class="row-actions">
             <button class="icon-btn" onclick="openCandidateDetail('${c.id}')">&#128065;</button>
-            ${canEdit?`<button class="icon-btn" onclick="openCandModal('${c.id}')">&#9998;</button>`:''}
+            ${canEdit?`<button class="icon-btn" onclick="openCandModal('${c.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteCandidate('${c.id}')">&#128465;</button>`:''}
           </td>
         </tr>`;
       }).join('')}
@@ -832,6 +861,18 @@ function openCandModal(id){
     else { const nc={id:uid('cd'), ...vals}; DB.candidates.push(nc); logActivity(nc.id,'Candidate added to database.'); }
     persist(); renderRoute(); showToast('Candidate saved.');
   });
+}
+function deleteCandidate(candId){
+  const c = DB.candidates.find(x=>x.id===candId); if(!c) return;
+  const relatedSubs = DB.submissions.filter(s=>s.candidateId===candId);
+  const warning = relatedSubs.length
+    ? `Delete ${c.name}? This also removes ${relatedSubs.length} linked submission(s), interviews, offers, joining records, and their activity history. This cannot be undone.`
+    : `Delete ${c.name}? This cannot be undone.`;
+  if(!confirm(warning)) return;
+  relatedSubs.forEach(s=>cascadeRemoveSubmission(s.id));
+  DB.candidates = DB.candidates.filter(x=>x.id!==candId);
+  DB.activity = DB.activity.filter(a=>a.candidateId!==candId);
+  persist(); renderRoute(); showToast('Candidate deleted.');
 }
 function openCandidateDetail(id){
   const c = DB.candidates.find(x=>x.id===id);
@@ -977,16 +1018,22 @@ function moveStage(subId, newStage){
   logActivity(s.candidateId, `Stage changed from "${prev}" to "${newStage}".`);
   persist(); renderRoute(); showToast(`Moved to ${newStage}.`);
 }
+// Removes a submission and everything hanging off it (interviews, offers, joinings),
+// without confirmation/persist/toast — used both directly and by higher-level deletes
+// (requirement, client, candidate) that need to cascade through many submissions at once.
+function cascadeRemoveSubmission(subId){
+  DB.interviews = DB.interviews.filter(i=>i.submissionId!==subId);
+  DB.offers = DB.offers.filter(o=>o.submissionId!==subId);
+  DB.joinings = DB.joinings.filter(j=>j.submissionId!==subId);
+  DB.submissions = DB.submissions.filter(x=>x.id!==subId);
+}
 function deleteSubmission(subId){
   const s = subById(subId); if(!s) return;
   const candidateName = candName(s.candidateId);
   const reqName = reqTitle(s.requirementId);
   if(!confirm(`Remove ${candidateName} from the pipeline for "${reqName}"? This also deletes any linked interviews, offers, and joining records for this submission. This cannot be undone.`)) return;
-  DB.interviews = DB.interviews.filter(i=>i.submissionId!==subId);
-  DB.offers = DB.offers.filter(o=>o.submissionId!==subId);
-  DB.joinings = DB.joinings.filter(j=>j.submissionId!==subId);
-  DB.submissions = DB.submissions.filter(x=>x.id!==subId);
   logActivity(s.candidateId, `Removed from pipeline for "${reqName}" (submission deleted).`);
+  cascadeRemoveSubmission(subId);
   persist(); renderRoute(); showToast('Submission removed.');
 }
 
@@ -1015,11 +1062,19 @@ function renderInterviews(){
           <td>${esc(i.interviewer)}</td>
           <td><span class="tag ${i.status==='Completed'?'tag-green':i.status==='No-show'?'tag-red':'tag-blue'}">${i.status}</span></td>
           <td>${i.outcome?`<span class="tag ${i.outcome==='Selected'?'tag-green':i.outcome==='Rejected'?'tag-red':'tag-gray'}">${i.outcome}</span>`:'—'}</td>
-          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openInterviewModal('${i.id}')">&#9998;</button>`:''}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openInterviewModal('${i.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteInterview('${i.id}')">&#128465;</button>`:''}</td>
         </tr>`;
       }).join('')}
       </tbody></table>` : emptyState('No interviews scheduled yet.')}
   </div>`;
+}
+function deleteInterview(ivId){
+  const iv = DB.interviews.find(x=>x.id===ivId); if(!iv) return;
+  const s = subById(iv.submissionId);
+  if(!confirm(`Delete this interview record (${iv.round})? This cannot be undone.`)) return;
+  DB.interviews = DB.interviews.filter(x=>x.id!==ivId);
+  if(s) logActivity(s.candidateId, `Interview "${iv.round}" record deleted.`);
+  persist(); renderRoute(); showToast('Interview deleted.');
 }
 function openInterviewModal(id){
   const eligibleSubs = DB.submissions.filter(s=>!TERMINAL.includes(s.stage));
@@ -1069,11 +1124,19 @@ function renderOffers(){
           <td class="mono">${esc(o.ctc)}</td>
           <td>${fmtDate(o.joiningDate)}</td>
           <td><span class="tag ${o.status==='Accepted'?'tag-green':o.status==='Declined'||o.status==='Withdrawn'?'tag-red':'tag-amber'}">${o.status}</span></td>
-          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openOfferModal('${o.id}')">&#9998;</button>`:''}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openOfferModal('${o.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteOffer('${o.id}')">&#128465;</button>`:''}</td>
         </tr>`;
       }).join('')}
       </tbody></table>` : emptyState('No offers extended yet.')}
   </div>`;
+}
+function deleteOffer(ofId){
+  const of_ = DB.offers.find(x=>x.id===ofId); if(!of_) return;
+  const s = subById(of_.submissionId);
+  if(!confirm(`Delete this offer record (${of_.ctc})? This cannot be undone.`)) return;
+  DB.offers = DB.offers.filter(x=>x.id!==ofId);
+  if(s) logActivity(s.candidateId, `Offer record deleted (${of_.ctc}).`);
+  persist(); renderRoute(); showToast('Offer deleted.');
 }
 function openOfferModal(id){
   const eligibleSubs = DB.submissions.filter(s=>['Interview','Offer'].includes(s.stage));
@@ -1167,15 +1230,84 @@ function recruiterScores(weights){
   scored.forEach(s=> s.pct = Math.round((s.score/max)*100));
   return scored.sort((a,b)=>b.score-a.score);
 }
+function bestPerformersForMonth(monthStr){
+  const joinedInMonth = DB.joinings.filter(j=>j.status==='Joined' && j.actualDate && j.actualDate.slice(0,7)===monthStr);
+  const byRecruiter = {};
+  joinedInMonth.forEach(j=>{
+    const s = subById(j.submissionId); if(!s) return;
+    const req = DB.requirements.find(r=>r.id===s.requirementId);
+    const client = req ? DB.clients.find(c=>c.id===req.clientId) : null;
+    const achievement = {
+      candidateName: candName(s.candidateId),
+      clientName: client ? client.name : '—',
+      clientLocation: client ? (client.location||'') : '',
+      requirementTitle: req ? req.title : '—',
+      joinDate: j.actualDate
+    };
+    if(!byRecruiter[s.recruiter]) byRecruiter[s.recruiter] = [];
+    byRecruiter[s.recruiter].push(achievement);
+  });
+  return Object.entries(byRecruiter).map(([username, achievements])=>({
+    username, name: userName(username), achievements, count: achievements.length
+  })).sort((a,b)=> b.count - a.count);
+}
+function shiftPerformanceMonth(delta){
+  const [y,m] = PERFORMANCE_MONTH.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  PERFORMANCE_MONTH = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderRoute();
+}
+function handlePerfMonthPicked(val){
+  if(!val) return;
+  PERFORMANCE_MONTH = val;
+  renderRoute();
+}
 function renderPerformance(){
   const weights = DB.settings.weights;
   const scored = recruiterScores(weights);
+  const topForMonth = bestPerformersForMonth(PERFORMANCE_MONTH);
+  const [py, pm] = PERFORMANCE_MONTH.split('-').map(Number);
+  const monthLabel = new Date(py, pm-1, 1).toLocaleDateString('en-IN', {month:'long', year:'numeric'});
+  const isCurrentMonth = PERFORMANCE_MONTH === new Date().toISOString().slice(0,7);
+  const medals = ['&#129351;','&#129352;','&#129353;'];
   return `
   <div class="topbar">
     <div><div class="page-title">Recruiter Performance</div><div class="page-sub">Weighted score: submission×${weights.submission} + interview×${weights.interview} + offer×${weights.offer} + join×${weights.join}</div></div>
     <div class="toolbar"><button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(scored).replace(/'/g,"&#39;")}, "performance.csv")'>Export CSV</button></div>
   </div>
   <div class="card">
+    <div class="card-title" style="flex-wrap:wrap; gap:10px;">
+      <span>Best Performers — ${monthLabel} <span class="tag tag-gray">by candidates joined that month</span></span>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="icon-btn" title="Previous month" onclick="shiftPerformanceMonth(-1)">&#8592;</button>
+        <input type="month" value="${PERFORMANCE_MONTH}" onchange="handlePerfMonthPicked(this.value)" class="select-sm" style="padding:6px 8px;">
+        <button class="icon-btn" title="Next month" onclick="shiftPerformanceMonth(1)">&#8594;</button>
+        ${!isCurrentMonth?`<button class="btn btn-ghost btn-sm" onclick="handlePerfMonthPicked('${new Date().toISOString().slice(0,7)}')">This month</button>`:''}
+      </div>
+    </div>
+    ${topForMonth.length? topForMonth.map((p,i)=>`
+      <div style="border:1px solid var(--paper-2); border-radius:10px; padding:14px 16px; margin-bottom:12px; ${i===0?'background:linear-gradient(90deg, var(--amber-bg), transparent);':''}">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            ${i<3?`<span style="font-size:18px;">${medals[i]}</span>`:''}
+            <b style="font-family:'Fraunces',serif; font-size:15px;">${esc(p.name)}</b>
+          </div>
+          <span class="tag tag-green">${p.count} join${p.count===1?'':'s'} in ${monthLabel}</span>
+        </div>
+        <div class="timeline" style="margin-top:0;">
+          ${p.achievements.map(a=>`
+            <div class="tl-item">
+              <div class="tl-dot" style="background:var(--green);"></div>
+              <div>
+                <div class="tl-body"><b>${esc(a.candidateName)}</b> joined ${esc(a.clientName)}${a.clientLocation?` <span style="color:var(--steel);">(${esc(a.clientLocation)})</span>`:''} — ${esc(a.requirementTitle)}</div>
+                <div class="tl-time">${fmtDate(a.joinDate)}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('') : emptyState(`No candidates joined in ${monthLabel}.`)}
+  </div>
+  <div class="card">
+    <div class="card-title">All-Time Weighted Score</div>
     ${scored.length? `<table><thead><tr><th>Recruiter</th><th>Submissions</th><th>Interviews</th><th>Offers</th><th>Joins</th><th>Score</th></tr></thead><tbody>
       ${scored.map(s=>`<tr class="tbl-row">
         <td class="name-cell"><b>${esc(s.name)}</b></td>
