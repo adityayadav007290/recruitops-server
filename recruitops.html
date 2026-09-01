@@ -267,15 +267,16 @@ const OFFER_STATUS = ['Extended','Accepted','Declined','Withdrawn'];
 const JOIN_STATUS = ['Pending','Joined','No-show','Deferred'];
 
 const ROLES = {
-  superadmin:{label:'Super Admin', nav:['dashboard','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
-  head:{label:'Recruitment Head', nav:['dashboard','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
-  teamlead:{label:'Team Leader', nav:['dashboard','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance']},
-  recruiter:{label:'Recruiter', nav:['dashboard','candidates','pipeline','submissions','interviews','offers','joining']},
+  superadmin:{label:'Super Admin', nav:['dashboard','search','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
+  head:{label:'Recruitment Head', nav:['dashboard','search','clients','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance','settings']},
+  teamlead:{label:'Team Leader', nav:['dashboard','search','requirements','candidates','pipeline','submissions','interviews','offers','joining','performance']},
+  recruiter:{label:'Recruiter', nav:['dashboard','search','candidates','pipeline','submissions','interviews','offers','joining']},
   salesam:{label:'Sales / AM', nav:['dashboard','clients','requirements']},
   management:{label:'Management', nav:['dashboard','performance']}
 };
 const NAV_META = {
   dashboard:{label:'Dashboard', ico:'&#9673;'},
+  search:{label:'Search Candidates', ico:'&#128269;'},
   clients:{label:'Clients', ico:'&#9635;'},
   requirements:{label:'Requirements', ico:'&#9776;'},
   candidates:{label:'Candidates', ico:'&#9787;'},
@@ -293,6 +294,7 @@ let DB = null;
 let CURRENT_USER = null;
 let ROUTE = 'dashboard';
 let PIPELINE_FILTER = 'all';
+let SEARCH_QUERY = '';
 
 function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function nowIso(){ return new Date().toISOString(); }
@@ -458,7 +460,7 @@ function renderNav(){
 function goRoute(key){ ROUTE=key; renderNav(); renderRoute(); }
 function renderRoute(){
   const fn = {
-    dashboard:renderDashboard, clients:renderClients, requirements:renderRequirements,
+    dashboard:renderDashboard, search:renderSearch, clients:renderClients, requirements:renderRequirements,
     candidates:renderCandidates, pipeline:renderPipeline, submissions:renderSubmissions,
     interviews:renderInterviews, offers:renderOffers, joining:renderJoining,
     performance:renderPerformance, settings:renderSettings
@@ -636,6 +638,69 @@ function renderDashboard(){
   </div>`;
 }
 function emptyState(msg){ return `<div class="empty-state" style="padding:24px;"><div>${esc(msg)}</div></div>`; }
+
+/* ============================= SEARCH CANDIDATES ============================= */
+function renderSearch(){
+  return `
+  <div class="topbar">
+    <div><div class="page-title">Search Candidates</div><div class="page-sub">Search your candidate database by key skills — like a resume bank.</div></div>
+  </div>
+  <div class="card">
+    <div class="field" style="margin-bottom:0;">
+      <label>Key Skills</label>
+      <input type="text" id="skillSearchInput" placeholder="e.g. Java, Spring Boot, AWS" value="${esc(SEARCH_QUERY)}" oninput="handleSearchInput(this.value)" autocomplete="off">
+    </div>
+    <div class="section-note" style="margin-top:12px;margin-bottom:0;">Separate multiple skills with commas or spaces. Candidates are ranked by how many of your key skills match their profile.</div>
+  </div>
+  <div id="searchResults">${renderSearchResults()}</div>`;
+}
+function handleSearchInput(val){
+  SEARCH_QUERY = val;
+  const el = document.getElementById('searchResults');
+  if(el) el.innerHTML = renderSearchResults();
+}
+function renderSearchResults(){
+  const query = SEARCH_QUERY.trim();
+  if(!query) return emptyState('Start typing key skills above to search your candidate database.');
+  const tokens = query.split(/[,\s]+/).map(t=>t.trim().toLowerCase()).filter(Boolean);
+  if(!tokens.length) return emptyState('Start typing key skills above to search your candidate database.');
+
+  const results = DB.candidates.map(c=>{
+    const candSkills = (c.skills||'').split(',').map(s=>s.trim()).filter(Boolean);
+    const candSkillsLower = candSkills.map(s=>s.toLowerCase());
+    const matchedTokens = tokens.filter(t => candSkillsLower.some(cs => cs.includes(t) || t.includes(cs)));
+    return { candidate:c, candSkills, matchedTokens, score: matchedTokens.length };
+  }).filter(r=>r.score>0).sort((a,b)=> b.score - a.score);
+
+  if(!results.length) return emptyState(`No candidates match "${esc(query)}". Try fewer or different skills.`);
+
+  return `
+    <div style="font-size:12.5px;color:var(--steel);font-weight:600;margin-bottom:12px;">${results.length} matching candidate${results.length===1?'':'s'}, ranked by best match</div>
+    ${results.map(r=>{
+      const c = r.candidate;
+      const active = DB.submissions.filter(s=>s.candidateId===c.id && !TERMINAL.includes(s.stage)).length;
+      const skillBadges = r.candSkills.map(s=>{
+        const isMatch = r.matchedTokens.some(t => s.toLowerCase().includes(t) || t.includes(s.toLowerCase()));
+        return `<span class="tag ${isMatch?'tag-green':'tag-gray'}" style="margin:2px 4px 2px 0;">${esc(s)}</span>`;
+      }).join('');
+      return `
+      <div class="card" style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:240px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px; flex-wrap:wrap;">
+            <b style="font-size:15px;font-family:'Fraunces',serif;">${esc(c.name)}</b>
+            <span class="tag tag-blue">${r.score}/${tokens.length} skills matched</span>
+          </div>
+          <div style="font-size:12.5px;color:var(--steel);margin-bottom:8px;">${esc(c.email)} · ${esc(c.phone)} · <span class="tag tag-gray" style="margin-left:2px;">${esc(c.source)}</span></div>
+          <div>${skillBadges}</div>
+          ${active>0?`<div style="font-size:11.5px;color:var(--steel);margin-top:8px;">Currently in ${active} active pipeline${active===1?'':'s'}</div>`:''}
+        </div>
+        <div class="row-actions" style="flex-shrink:0;">
+          <button class="btn btn-ghost btn-sm" onclick="openCandidateDetail('${c.id}')">View Profile</button>
+          <button class="btn btn-amber btn-sm" onclick="openSubModal(null,'${c.id}')">Submit</button>
+        </div>
+      </div>`;
+    }).join('')}`;
+}
 
 /* ============================= CLIENTS ============================= */
 function renderClients(){
@@ -841,13 +906,13 @@ function renderSubmissions(){
           <td>${esc(userName(s.recruiter))}</td>
           <td>${stageTag(s.stage)}</td>
           <td>${fmtDate(s.createdAt)}</td>
-          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openSubModal('${s.id}')">&#9998;</button>`:''}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openSubModal('${s.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteSubmission('${s.id}')">&#128465;</button>`:''}</td>
         </tr>`).join('')}
       </tbody></table>` : emptyState('No submissions yet. Submit a candidate against a requirement to begin tracking.')}
   </div>`;
 }
-function openSubModal(id){
-  const s = id ? DB.submissions.find(x=>x.id===id) : {candidateId:DB.candidates[0]?.id||'', requirementId:DB.requirements[0]?.id||'', recruiter:CURRENT_USER.username, stage:'Sourced'};
+function openSubModal(id, prefillCandidateId){
+  const s = id ? DB.submissions.find(x=>x.id===id) : {candidateId:prefillCandidateId||DB.candidates[0]?.id||'', requirementId:DB.requirements[0]?.id||'', recruiter:CURRENT_USER.username, stage:'Sourced'};
   openModal(id?'Edit Submission':'New Submission', [
     {key:'candidateId', label:'Candidate', type:'select', options:DB.candidates.map(c=>c.id), required:true},
     {key:'requirementId', label:'Requirement', type:'select', options:DB.requirements.map(r=>r.id), required:true},
@@ -897,6 +962,7 @@ function renderPipeline(){
               <span class="kcard-move" onclick="event.stopPropagation()">
                 ${nextStage?`<button class="mini-btn" title="Advance to ${nextStage}" onclick="moveStage('${s.id}','${nextStage}')">&#8594;</button>`:''}
                 <button class="mini-btn rej" title="Reject" onclick="moveStage('${s.id}','Rejected')">&#10005;</button>
+                <button class="mini-btn rej" title="Delete" onclick="deleteSubmission('${s.id}')">&#128465;</button>
               </span>
             </div>
           </div>`;
@@ -910,6 +976,18 @@ function moveStage(subId, newStage){
   const prev = s.stage; s.stage = newStage; s.updatedAt = nowIso();
   logActivity(s.candidateId, `Stage changed from "${prev}" to "${newStage}".`);
   persist(); renderRoute(); showToast(`Moved to ${newStage}.`);
+}
+function deleteSubmission(subId){
+  const s = subById(subId); if(!s) return;
+  const candidateName = candName(s.candidateId);
+  const reqName = reqTitle(s.requirementId);
+  if(!confirm(`Remove ${candidateName} from the pipeline for "${reqName}"? This also deletes any linked interviews, offers, and joining records for this submission. This cannot be undone.`)) return;
+  DB.interviews = DB.interviews.filter(i=>i.submissionId!==subId);
+  DB.offers = DB.offers.filter(o=>o.submissionId!==subId);
+  DB.joinings = DB.joinings.filter(j=>j.submissionId!==subId);
+  DB.submissions = DB.submissions.filter(x=>x.id!==subId);
+  logActivity(s.candidateId, `Removed from pipeline for "${reqName}" (submission deleted).`);
+  persist(); renderRoute(); showToast('Submission removed.');
 }
 
 /* ============================= INTERVIEWS ============================= */
@@ -1039,11 +1117,20 @@ function renderJoining(){
           <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
           <td>${fmtDate(j.actualDate)}</td>
           <td><span class="tag ${j.status==='Joined'?'tag-green':j.status==='No-show'?'tag-red':'tag-amber'}">${j.status}</span></td>
-          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openJoinModal('${j.id}')">&#9998;</button>`:''}</td>
+          <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openJoinModal('${j.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteJoining('${j.id}')">&#128465;</button>`:''}</td>
         </tr>`;
       }).join('')}
       </tbody></table>` : emptyState('No joinings logged yet.')}
   </div>`;
+}
+function deleteJoining(joinId){
+  const j = DB.joinings.find(x=>x.id===joinId); if(!j) return;
+  const s = subById(j.submissionId);
+  const candidateName = s ? candName(s.candidateId) : 'this candidate';
+  if(!confirm(`Remove the joining record for ${candidateName}? This cannot be undone.`)) return;
+  DB.joinings = DB.joinings.filter(x=>x.id!==joinId);
+  if(s) logActivity(s.candidateId, `Joining record removed.`);
+  persist(); renderRoute(); showToast('Joining record removed.');
 }
 function openJoinModal(id){
   const eligibleSubs = DB.submissions.filter(s=>['Offer','Joined'].includes(s.stage));
