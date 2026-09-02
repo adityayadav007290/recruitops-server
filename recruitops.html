@@ -910,12 +910,16 @@ function renderCandidates(){
     </div>
   </div>
   <div class="card">
-    ${DB.candidates.length? `<table><thead><tr><th>Candidate</th><th>Skills</th><th>Source</th><th>Resume</th><th>Active In</th><th></th></tr></thead><tbody>
+    ${DB.candidates.length? `<table><thead><tr><th>Candidate</th><th>CID</th><th>Skills</th><th>Exp</th><th>Location</th><th>Recruiter</th><th>Source</th><th>Resume</th><th>Active In</th><th></th></tr></thead><tbody>
       ${DB.candidates.map(c=>{
         const active = DB.submissions.filter(s=>s.candidateId===c.id && !TERMINAL.includes(s.stage)).length;
         return `<tr class="tbl-row">
           <td class="name-cell"><b>${esc(c.name)}</b><small>${esc(c.email)} · ${esc(c.phone)}</small></td>
+          <td class="mono">${esc(c.cid||'—')}</td>
           <td>${esc(c.skills)}</td>
+          <td>${c.yearsExp!==undefined && c.yearsExp!==''? esc(c.yearsExp)+' yrs' : '—'}</td>
+          <td>${esc(c.location||'—')}</td>
+          <td>${c.recruiter? esc(userName(c.recruiter)) : '—'}</td>
           <td><span class="tag tag-gray">${esc(c.source)}</span></td>
           <td>${c.resumeUrl? `<a href="${getApiBase()}${esc(c.resumeUrl)}" target="_blank" style="font-size:12px;font-weight:600;color:var(--blue);">&#128196; View</a>` : `<span style="font-size:12px;color:var(--steel-light);">Not uploaded</span>`}</td>
           <td>${active} pipeline${active===1?'':'s'}</td>
@@ -929,18 +933,27 @@ function renderCandidates(){
   </div>`;
 }
 function openCandModal(id){
-  const c = id ? DB.candidates.find(x=>x.id===id) : {name:'',email:'',phone:'',skills:'',source:'LinkedIn'};
+  const c = id ? DB.candidates.find(x=>x.id===id) : {name:'',email:'',phone:'',skills:'',source:'LinkedIn',recruiter:CURRENT_USER.username,cid:'',yearsExp:'',location:'',currentCtc:'',expectedCtc:''};
   openModal(id?'Edit Candidate':'Add Candidate', [
     {key:'name', label:'Full Name', required:true},
     {key:'email', label:'Email'},
     {key:'phone', label:'Phone'},
+    {key:'cid', label:'Candidate ID (CID)'},
     {key:'skills', label:'Skills (comma separated)'},
+    {key:'yearsExp', label:'Years of Experience', type:'number'},
+    {key:'location', label:'Location (city)'},
+    {key:'currentCtc', label:'Current CTC'},
+    {key:'expectedCtc', label:'Expected CTC'},
+    {key:'recruiter', label:'Recruiter', type:'select', options:recruiterOptions().map(u=>u.username)},
     {key:'source', label:'Source', type:'select', options:['LinkedIn','Naukri','Referral','Job Portal','Walk-in','Other']}
   ], c, (vals)=>{
     if(id){ Object.assign(c, vals); }
     else { const nc={id:uid('cd'), ...vals}; DB.candidates.push(nc); logActivity(nc.id,'Candidate added to database.'); }
     persist(); renderRoute(); showToast('Candidate saved.');
   });
+  setTimeout(()=>{
+    const rc=document.getElementById('mf_recruiter'); if(rc) Array.from(rc.options).forEach(o=>o.textContent=userName(o.value));
+  },0);
 }
 function deleteCandidate(candId){
   const c = DB.candidates.find(x=>x.id===candId); if(!c) return;
@@ -961,7 +974,15 @@ function openCandidateDetail(id){
   const overlay = document.getElementById('modalOverlay'); const box=document.getElementById('modalBox');
   box.innerHTML = `
     <div class="modal-title">${esc(c.name)}<button class="modal-close" onclick="closeModal()">&times;</button></div>
-    <div style="font-size:13px;color:var(--steel);margin-bottom:14px;">${esc(c.email)} · ${esc(c.phone)} · ${esc(c.skills)}</div>
+    <div style="font-size:13px;color:var(--steel);margin-bottom:10px;">${esc(c.email)} · ${esc(c.phone)} · ${esc(c.skills)}</div>
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;">
+      ${c.cid?`<span class="tag tag-gray">CID: ${esc(c.cid)}</span>`:''}
+      ${c.yearsExp!==undefined && c.yearsExp!==''?`<span class="tag tag-blue">${esc(c.yearsExp)} yrs exp</span>`:''}
+      ${c.location?`<span class="tag tag-gray">${esc(c.location)}</span>`:''}
+      ${c.currentCtc?`<span class="tag tag-gray">Current: ${esc(c.currentCtc)}</span>`:''}
+      ${c.expectedCtc?`<span class="tag tag-amber">Expected: ${esc(c.expectedCtc)}</span>`:''}
+      ${c.recruiter?`<span class="tag tag-green">Recruiter: ${esc(userName(c.recruiter))}</span>`:''}
+    </div>
     <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--steel-light);margin-bottom:8px;">Resume</div>
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
       ${c.resumeUrl? `<a href="${getApiBase()}${esc(c.resumeUrl)}" target="_blank" class="btn btn-ghost btn-sm">&#128196; View Resume</a>` : `<span style="font-size:13px;color:var(--steel);">No resume uploaded yet.</span>`}
@@ -1078,9 +1099,19 @@ function renderPipeline(){
         ${cards.map(s=>{
           const idx = STAGES.indexOf(stage);
           const nextStage = STAGES[idx+1];
+          const cand = DB.candidates.find(x=>x.id===s.candidateId) || {};
+          const infoParts = [];
+          if(cand.cid) infoParts.push(`CID ${esc(cand.cid)}`);
+          if(cand.yearsExp!==undefined && cand.yearsExp!=='') infoParts.push(`${esc(cand.yearsExp)} yrs`);
+          if(cand.location) infoParts.push(esc(cand.location));
+          const ctcParts = [];
+          if(cand.currentCtc) ctcParts.push(`Cur: ${esc(cand.currentCtc)}`);
+          if(cand.expectedCtc) ctcParts.push(`Exp: ${esc(cand.expectedCtc)}`);
           return `<div class="kcard" onclick="openCandidateDetail('${s.candidateId}')">
             <div class="kcard-name">${esc(candName(s.candidateId))}</div>
             <div class="kcard-req">${esc(reqTitle(s.requirementId))}</div>
+            ${infoParts.length?`<div style="font-size:10.5px;color:var(--steel);margin-top:4px;">${infoParts.join(' · ')}</div>`:''}
+            ${ctcParts.length?`<div style="font-size:10.5px;color:var(--steel);margin-top:2px;">${ctcParts.join(' · ')}</div>`:''}
             <div class="kcard-foot">
               <span class="kcard-rec">${esc(userName(s.recruiter))}</span>
               <span class="kcard-move" onclick="event.stopPropagation()">
@@ -1161,10 +1192,10 @@ function deleteInterview(ivId){
 }
 function openInterviewModal(id){
   const eligibleSubs = DB.submissions.filter(s=>!TERMINAL.includes(s.stage));
-  const i = id ? DB.interviews.find(x=>x.id===id) : {submissionId:eligibleSubs[0]?.id||'', round:'L1 - Technical', date:todayIso(), interviewer:'', status:'Scheduled', outcome:'Pending', feedback:''};
+  const i = id ? DB.interviews.find(x=>x.id===id) : {submissionId:eligibleSubs[0]?.id||'', round:'L1', date:todayIso(), interviewer:'', status:'Scheduled', outcome:'Pending', feedback:''};
   openModal(id?'Edit Interview':'Schedule Interview', [
     {key:'submissionId', label:'Candidate / Requirement', type:'select', options:eligibleSubs.map(s=>s.id), required:true},
-    {key:'round', label:'Round'},
+    {key:'round', label:'Round', type:'select', options:['L1','L2','Client']},
     {key:'date', label:'Date', type:'date'},
     {key:'interviewer', label:'Interviewer'},
     {key:'status', label:'Status', type:'select', options:INTERVIEW_STATUS},
@@ -1194,16 +1225,26 @@ function renderOffers(){
   <div class="topbar">
     <div><div class="page-title">Offers</div><div class="page-sub">Compensation extended and offer status.</div></div>
     <div class="toolbar">
-      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(o=>({candidate:candName(subById(o.submissionId)?.candidateId), ctc:o.ctc, joiningDate:o.joiningDate, status:o.status}))).replace(/'/g,"&#39;")}, "offers.csv")'>Export CSV</button>
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(o=>{
+        const s = subById(o.submissionId);
+        const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
+        return {candidate:s?candName(s.candidateId):'', cid:cand.cid||'', yearsExp:cand.yearsExp!==undefined?cand.yearsExp:'', location:cand.location||'', currentCtc:cand.currentCtc||'', expectedCtc:cand.expectedCtc||'', offeredCtc:o.ctc, joiningDate:o.joiningDate, status:o.status};
+      })).replace(/'/g,"&#39;")}, "offers.csv")'>Export CSV</button>
       ${canEdit? `<button class="btn btn-amber" onclick="openOfferModal()">+ New Offer</button>`:''}
     </div>
   </div>
   <div class="card">
-    ${list.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>CTC</th><th>Target Joining</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>CID</th><th>Exp</th><th>Location</th><th>Current CTC</th><th>Expected CTC</th><th>Requirement</th><th>Offered CTC</th><th>Target Joining</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(o=>{
         const s = subById(o.submissionId);
+        const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
         return `<tr class="tbl-row">
           <td class="name-cell"><b>${esc(s?candName(s.candidateId):'—')}</b></td>
+          <td class="mono">${esc(cand.cid||'—')}</td>
+          <td>${cand.yearsExp!==undefined && cand.yearsExp!==''? esc(cand.yearsExp)+' yrs' : '—'}</td>
+          <td>${esc(cand.location||'—')}</td>
+          <td>${esc(cand.currentCtc||'—')}</td>
+          <td>${esc(cand.expectedCtc||'—')}</td>
           <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
           <td class="mono">${esc(o.ctc)}</td>
           <td>${fmtDate(o.joiningDate)}</td>
@@ -1251,16 +1292,26 @@ function renderJoining(){
   <div class="topbar">
     <div><div class="page-title">Joining</div><div class="page-sub">Final confirmation that closes the loop.</div></div>
     <div class="toolbar">
-      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(j=>({candidate:candName(subById(j.submissionId)?.candidateId), sourcedBy:userName(subById(j.submissionId)?.recruiter||""), actualDate:j.actualDate, status:j.status}))).replace(/'/g,"&#39;")}, "joining.csv")'>Export CSV</button>
+      <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(j=>{
+        const s = subById(j.submissionId);
+        const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
+        return {candidate:s?candName(s.candidateId):'', cid:cand.cid||'', yearsExp:cand.yearsExp!==undefined?cand.yearsExp:'', location:cand.location||'', currentCtc:cand.currentCtc||'', expectedCtc:cand.expectedCtc||'', sourcedBy:s?userName(s.recruiter):'', actualDate:j.actualDate, status:j.status};
+      })).replace(/'/g,"&#39;")}, "joining.csv")'>Export CSV</button>
       ${canEdit? `<button class="btn btn-amber" onclick="openJoinModal()">+ Log Joining</button>`:''}
     </div>
   </div>
   <div class="card">
-    ${list.length? `<table><thead><tr><th>Candidate</th><th>Requirement</th><th>Sourced By</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>CID</th><th>Exp</th><th>Location</th><th>Current CTC</th><th>Expected CTC</th><th>Requirement</th><th>Sourced By</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(j=>{
         const s = subById(j.submissionId);
+        const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
         return `<tr class="tbl-row">
           <td class="name-cell"><b>${esc(s?candName(s.candidateId):'—')}</b></td>
+          <td class="mono">${esc(cand.cid||'—')}</td>
+          <td>${cand.yearsExp!==undefined && cand.yearsExp!==''? esc(cand.yearsExp)+' yrs' : '—'}</td>
+          <td>${esc(cand.location||'—')}</td>
+          <td>${esc(cand.currentCtc||'—')}</td>
+          <td>${esc(cand.expectedCtc||'—')}</td>
           <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
           <td>${s?esc(userName(s.recruiter)):'—'}</td>
           <td>${fmtDate(j.actualDate)}</td>
