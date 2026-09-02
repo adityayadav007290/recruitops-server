@@ -428,6 +428,33 @@ setInterval(async ()=>{
 
 /* ============================= AUTH ============================= */
 function fillLogin(u,p){ document.getElementById('loginUser').value=u; document.getElementById('loginPass').value=p; }
+// Role → sidebar access is configurable by Super Admin (Settings → Role Permissions).
+// DB.settings.rolePermissions overrides the hardcoded ROLES[role].nav defaults once
+// a Super Admin has customized it; falls back to the defaults until then.
+function ensureRolePermissions(){
+  if(!DB.settings) DB.settings = {};
+  if(!DB.settings.rolePermissions) DB.settings.rolePermissions = {};
+  Object.keys(ROLES).forEach(r=>{
+    if(!DB.settings.rolePermissions[r]) DB.settings.rolePermissions[r] = [...ROLES[r].nav];
+  });
+  return DB.settings.rolePermissions;
+}
+function getRoleNav(role){
+  const perms = ensureRolePermissions();
+  return perms[role] || ROLES[role]?.nav || ['dashboard'];
+}
+function togglePermission(role, navKey, checked){
+  const perms = ensureRolePermissions();
+  const list = perms[role] || [];
+  if(checked){ if(!list.includes(navKey)) list.push(navKey); }
+  else { perms[role] = list.filter(k=>k!==navKey); }
+  persist();
+  if(CURRENT_USER && CURRENT_USER.role===role){
+    if(!getRoleNav(role).includes(ROUTE)) ROUTE = getRoleNav(role)[0] || 'dashboard';
+    renderNav(); renderRoute();
+  }
+}
+
 async function doLogin(){
   const u=document.getElementById('loginUser').value.trim();
   const p=document.getElementById('loginPass').value;
@@ -440,7 +467,7 @@ async function doLogin(){
   CURRENT_USER = user;
   document.getElementById('authScreen').style.display='none';
   document.getElementById('app').classList.add('active');
-  ROUTE = ROLES[user.role].nav[0];
+  ROUTE = getRoleNav(user.role)[0] || 'dashboard';
   renderNav();
   renderRoute();
 }
@@ -453,9 +480,10 @@ function doLogout(){
 
 /* ============================= NAV / SHELL ============================= */
 function renderNav(){
-  const nav = ROLES[CURRENT_USER.role].nav;
+  const nav = getRoleNav(CURRENT_USER.role);
   document.getElementById('navList').innerHTML = nav.map(key=>{
     const m = NAV_META[key];
+    if(!m) return '';
     return `<div class="nav-item ${ROUTE===key?'active':''}" onclick="goRoute('${key}')"><span class="nav-ico">${m.ico}</span>${m.label}</div>`;
   }).join('');
   document.getElementById('sideUser').innerHTML = `<b>${CURRENT_USER.name}</b>${CURRENT_USER.username}<div class="role-pill">${ROLES[CURRENT_USER.role].label}</div>`;
@@ -1471,6 +1499,7 @@ function renderSettings(){
     </div>
     <button class="btn btn-primary" style="margin-top:10px;width:auto;padding:10px 20px;" onclick="saveWeights()">Save Weights</button>
   </div>
+  ${isSuper? renderRolePermissionsCard() : ''}
   ${isSuper?`<div class="card">
     <div class="card-title">Data & Backup</div>
     <div class="section-note">All data lives on your central server (${esc(getApiBase())}) and is shared by everyone using this app. Back it up regularly — resetting affects every user immediately.</div>
@@ -1484,6 +1513,28 @@ function renderSettings(){
     <table><thead><tr><th>Name</th><th>Username</th><th>Role</th>${isSuper?'<th></th>':''}</tr></thead><tbody>
       ${DB.users.map(u=>`<tr class="tbl-row"><td class="name-cell"><b>${esc(u.name)}</b></td><td class="mono">${esc(u.username)}</td><td><span class="tag tag-blue">${ROLES[u.role].label}</span></td>${isSuper?`<td class="row-actions"><button class="icon-btn" onclick="openUserModal('${u.username}')">&#9998;</button></td>`:''}</tr>`).join('')}
     </tbody></table>
+  </div>`;
+}
+function renderRolePermissionsCard(){
+  const perms = ensureRolePermissions();
+  const roleKeys = Object.keys(ROLES).filter(r=>r!=='superadmin');
+  const navKeys = Object.keys(NAV_META);
+  return `
+  <div class="card">
+    <div class="card-title">Role Permissions</div>
+    <div class="section-note">Control which pages each role can see in the sidebar. Super Admin always has full access (not shown here) so you can't lock yourself out, and Dashboard is always visible to everyone.</div>
+    <div style="overflow-x:auto;">
+    <table><thead><tr><th>Page</th>${roleKeys.map(r=>`<th style="text-align:center;">${esc(ROLES[r].label)}</th>`).join('')}</tr></thead><tbody>
+      ${navKeys.map(navKey=>{
+        const meta = NAV_META[navKey];
+        const isLocked = navKey==='dashboard';
+        return `<tr class="tbl-row"><td>${esc(meta.label)}</td>${roleKeys.map(r=>{
+          const checked = isLocked || (perms[r]||[]).includes(navKey);
+          return `<td style="text-align:center;"><input type="checkbox" ${checked?'checked':''} ${isLocked?'disabled title="Everyone can always see the Dashboard"':''} onchange="togglePermission('${r}','${navKey}', this.checked)"></td>`;
+        }).join('')}</tr>`;
+      }).join('')}
+    </tbody></table>
+    </div>
   </div>`;
 }
 function saveWeights(){
