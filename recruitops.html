@@ -119,6 +119,18 @@ a{color:inherit;}
 .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
 .select-sm{padding:8px 10px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:#fff; color:var(--ink);}
 
+.month-dropdown{position:relative; display:inline-block;}
+.month-cal-overlay{position:fixed; inset:0; z-index:70; background:transparent;}
+.month-cal-panel{
+  position:absolute; top:calc(100% + 6px); left:0; background:#fff; border:1px solid var(--line);
+  border-radius:10px; box-shadow:0 12px 32px rgba(20,33,61,.18); padding:14px; z-index:71; width:220px;
+}
+.month-cal-year-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; font-weight:700; font-size:13.5px; color:var(--ink);}
+.month-cal-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:6px;}
+.month-cal-btn{padding:9px 4px; border-radius:7px; border:1px solid transparent; background:var(--paper-2); font-size:12.5px; font-weight:600; color:var(--ink); cursor:pointer; transition:background .12s;}
+.month-cal-btn:hover{background:var(--line);}
+.month-cal-btn.active{background:var(--ink); color:#fff;}
+
 /* KPI cards */
 .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:14px; margin-bottom:22px;}
 .kpi-card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow);}
@@ -339,6 +351,8 @@ let ROUTE = 'dashboard';
 let PIPELINE_FILTER = 'all';
 let PERFORMANCE_MONTH = new Date().toISOString().slice(0,7);
 let CLIENT_DASH_MONTH = new Date().toISOString().slice(0,7);
+let CLIENT_DASH_CAL_OPEN = false;
+let CLIENT_DASH_CAL_YEAR = null;
 let SEARCH_QUERY = '';
 
 function uid(p){ return p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
@@ -886,6 +900,38 @@ function handleClientDashMonthPicked(val){
   CLIENT_DASH_MONTH = val;
   renderRoute();
 }
+function toggleClientDashCalendar(){
+  CLIENT_DASH_CAL_OPEN = !CLIENT_DASH_CAL_OPEN;
+  if(CLIENT_DASH_CAL_OPEN) CLIENT_DASH_CAL_YEAR = Number(CLIENT_DASH_MONTH.split('-')[0]);
+  renderRoute();
+}
+function closeClientDashCalendar(){ CLIENT_DASH_CAL_OPEN = false; renderRoute(); }
+function shiftClientDashCalYear(delta){ CLIENT_DASH_CAL_YEAR += delta; renderRoute(); }
+function pickClientDashMonth(monthNum){
+  CLIENT_DASH_MONTH = CLIENT_DASH_CAL_YEAR + '-' + String(monthNum).padStart(2,'0');
+  CLIENT_DASH_CAL_OPEN = false;
+  renderRoute();
+}
+function renderClientDashCalendarPanel(){
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const [selY, selM] = CLIENT_DASH_MONTH.split('-').map(Number);
+  return `
+    <div class="month-cal-overlay" onclick="closeClientDashCalendar()"></div>
+    <div class="month-cal-panel" onclick="event.stopPropagation()">
+      <div class="month-cal-year-row">
+        <button class="icon-btn" onclick="shiftClientDashCalYear(-1)">&#8592;</button>
+        <span>${CLIENT_DASH_CAL_YEAR}</span>
+        <button class="icon-btn" onclick="shiftClientDashCalYear(1)">&#8594;</button>
+      </div>
+      <div class="month-cal-grid">
+        ${monthNames.map((mn,i)=>{
+          const monthNum = i+1;
+          const isActive = CLIENT_DASH_CAL_YEAR===selY && monthNum===selM;
+          return `<button class="month-cal-btn ${isActive?'active':''}" onclick="pickClientDashMonth(${monthNum})">${mn}</button>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
 function renderClientDashboard(){
   const stats = clientMonthlyStats(CLIENT_DASH_MONTH);
   const [cy, cm] = CLIENT_DASH_MONTH.split('-').map(Number);
@@ -903,7 +949,10 @@ function renderClientDashboard(){
     <div><div class="page-title">Client Dashboard</div><div class="page-sub">Submissions, joins, pipeline, and drops — client by client, month by month.</div></div>
     <div class="toolbar">
       <button class="icon-btn" title="Previous month" onclick="shiftClientDashMonth(-1)">&#8592;</button>
-      <input type="month" value="${CLIENT_DASH_MONTH}" onchange="handleClientDashMonthPicked(this.value)" class="select-sm" style="padding:6px 8px;">
+      <div class="month-dropdown">
+        <button class="btn btn-ghost btn-sm" onclick="toggleClientDashCalendar()">&#128197; ${monthLabel} <span style="margin-left:4px;">&#9662;</span></button>
+        ${CLIENT_DASH_CAL_OPEN? renderClientDashCalendarPanel() : ''}
+      </div>
       <button class="icon-btn" title="Next month" onclick="shiftClientDashMonth(1)">&#8594;</button>
       ${!isCurrentMonth?`<button class="btn btn-ghost btn-sm" onclick="handleClientDashMonthPicked('${new Date().toISOString().slice(0,7)}')">This month</button>`:''}
       <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(stats.map(s=>({client:s.client.name, location:s.client.location||"", totalSubmissions:s.totalSubmissions, joined:s.joined, pipelineCount:s.pipelineCount, dropped:s.dropped}))).replace(/'/g,"&#39;")}, "client-dashboard-${CLIENT_DASH_MONTH}.csv")'>Export CSV</button>
