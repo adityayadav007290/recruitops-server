@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RecruitOps</title>
+<title>RecruitOps | Sellcraft</title>
+<link rel="icon" type="image/png" href="https://sellcraft.net/wp-content/uploads/2026/07/cropped-favicon-logo-270x270.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -45,6 +46,9 @@ a{color:inherit;}
   background:var(--white); width:100%; max-width:400px; border-radius:14px;
   padding:38px 34px 30px; box-shadow:0 20px 60px rgba(0,0,0,.35);
 }
+.company-brand{margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--line);}
+.company-logo{max-height:34px; max-width:220px; object-fit:contain; display:block;}
+.company-fallback{display:none; font-family:'Inter',sans-serif; font-size:13px; font-weight:700; color:var(--ink); letter-spacing:.01em;}
 .auth-brand{display:flex; align-items:center; gap:10px; margin-bottom:4px;}
 .auth-mark{
   width:34px;height:34px;border-radius:8px;background:var(--ink);
@@ -52,7 +56,8 @@ a{color:inherit;}
   font-family:'Fraunces',serif;font-weight:700;font-size:18px;
 }
 .auth-brand-name{font-family:'Fraunces',serif; font-size:22px; font-weight:600; letter-spacing:-.01em;}
-.auth-sub{color:var(--steel); font-size:13.5px; margin:6px 0 26px;}
+.auth-sub{color:var(--steel); font-size:13.5px; margin:6px 0 4px;}
+.auth-company-name{color:var(--steel-light); font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; margin:0 0 26px;}
 .field{margin-bottom:16px;}
 .field label{display:block; font-size:12.5px; font-weight:600; color:var(--steel); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
 .field input,.field select,.field textarea{
@@ -101,6 +106,9 @@ a{color:inherit;}
 .role-pill{display:inline-block; margin-top:3px; font-size:10.5px; background:rgba(232,150,58,.18); color:var(--amber); padding:2px 7px; border-radius:20px; text-transform:uppercase; letter-spacing:.04em;}
 .logout-btn{width:100%; margin-top:10px; background:rgba(255,255,255,.08); color:#fff; text-align:center; justify-content:center; border:none;}
 .logout-btn:hover{background:rgba(255,255,255,.15);}
+.side-company{margin-top:16px; padding-top:14px; border-top:1px solid rgba(255,255,255,.08); text-align:center;}
+.side-company-logo{max-height:20px; max-width:150px; object-fit:contain; margin:0 auto; opacity:.85;}
+.side-company-fallback{display:none; font-size:9.5px; color:rgba(255,255,255,.45); text-transform:uppercase; letter-spacing:.04em; font-weight:600; line-height:1.4;}
 
 #mobileTopbar{display:none; align-items:center; justify-content:space-between; background:var(--ink); color:#fff; padding:12px 16px; position:sticky; top:0; z-index:60;}
 #mobileTopbar .side-brand{padding:0; border:none; margin:0;}
@@ -233,11 +241,16 @@ tr.tbl-row:hover{background:var(--paper-2);}
 
 <div id="authScreen">
   <div class="auth-card">
+    <div class="company-brand">
+      <img src="https://sellcraft.net/wp-content/uploads/2026/07/sellcraft-logo.svg" alt="Sellcraft" class="company-logo" onerror="this.style.display='none'; document.getElementById('companyFallback').style.display='block';">
+      <span id="companyFallback" class="company-fallback">Sellcraft Global Technology Solutions Pvt Ltd</span>
+    </div>
     <div class="auth-brand">
       <div class="auth-mark">R</div>
       <div class="auth-brand-name">RecruitOps</div>
     </div>
     <div class="auth-sub">Requisition-to-joining tracker for staffing teams.</div>
+    <div class="auth-company-name">Sellcraft Global Technology Solutions Pvt Ltd</div>
     <div class="field">
       <label>Username</label>
       <input id="loginUser" type="text" placeholder="e.g. admin" autocomplete="username">
@@ -276,6 +289,10 @@ tr.tbl-row:hover{background:var(--paper-2);}
     <div class="side-foot">
       <div class="side-user" id="sideUser"></div>
       <button class="btn logout-btn" onclick="doLogout()">Log out</button>
+      <div class="side-company">
+        <img src="https://sellcraft.net/wp-content/uploads/2026/07/footer-logo.png" alt="Sellcraft" class="side-company-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+        <span class="side-company-fallback">Sellcraft Global Technology Solutions Pvt Ltd</span>
+      </div>
     </div>
   </div>
   <div id="main"></div>
