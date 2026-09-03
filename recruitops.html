@@ -102,6 +102,12 @@ a{color:inherit;}
 .logout-btn{width:100%; margin-top:10px; background:rgba(255,255,255,.08); color:#fff; text-align:center; justify-content:center; border:none;}
 .logout-btn:hover{background:rgba(255,255,255,.15);}
 
+#mobileTopbar{display:none; align-items:center; justify-content:space-between; background:var(--ink); color:#fff; padding:12px 16px; position:sticky; top:0; z-index:60;}
+#mobileTopbar .side-brand{padding:0; border:none; margin:0;}
+.hamburger-btn{background:rgba(255,255,255,.1); border:none; color:#fff; width:36px; height:36px; border-radius:8px; font-size:18px; display:flex; align-items:center; justify-content:center;}
+#sidebarOverlay{display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:55;}
+#sidebarOverlay.active{display:block;}
+
 #main{padding:26px 32px 60px; overflow-x:hidden;}
 .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px;}
 .page-title{font-family:'Fraunces',serif; font-size:26px; font-weight:600; letter-spacing:-.01em;}
@@ -122,6 +128,25 @@ a{color:inherit;}
 
 .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px; box-shadow:var(--shadow); margin-bottom:18px;}
 .card-title{font-family:'Fraunces',serif; font-size:16.5px; font-weight:600; margin:0 0 14px; display:flex; justify-content:space-between; align-items:center;}
+
+/* Mobile layout: sidebar becomes a slide-in drawer, opened via hamburger topbar */
+@media(max-width:820px){
+  #app.active{display:block;}
+  #mobileTopbar{display:flex;}
+  #sidebar{
+    position:fixed; top:0; left:0; height:100vh; width:250px; max-width:80vw;
+    transform:translateX(-100%); transition:transform .22s ease; z-index:56; overflow-y:auto;
+  }
+  #sidebar.mobile-open{transform:translateX(0);}
+  #main{padding:18px 16px 48px;}
+  .page-title{font-size:21px;}
+  .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px;}
+  .kpi-value{font-size:24px;}
+  table{font-size:12.5px;}
+  .card{padding:16px;}
+  .topbar{flex-direction:column; align-items:flex-start; gap:10px;}
+  .toolbar{width:100%;}
+}
 
 /* funnel */
 .funnel-row{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
@@ -234,6 +259,14 @@ tr.tbl-row:hover{background:var(--paper-2);}
 </div>
 
 <div id="app">
+  <div id="mobileTopbar">
+    <div class="side-brand">
+      <div class="side-mark">R</div>
+      <div class="side-name" style="color:#fff;">RecruitOps</div>
+    </div>
+    <button class="hamburger-btn" onclick="toggleMobileSidebar()" aria-label="Menu">&#9776;</button>
+  </div>
+  <div id="sidebarOverlay" onclick="closeMobileSidebar()"></div>
   <div id="sidebar">
     <div class="side-brand">
       <div class="side-mark">R</div>
@@ -455,6 +488,7 @@ function togglePermission(role, navKey, checked){
   }
 }
 
+const SESSION_KEY = 'recruitops-session-username';
 async function doLogin(){
   const u=document.getElementById('loginUser').value.trim();
   const p=document.getElementById('loginPass').value;
@@ -464,6 +498,10 @@ async function doLogin(){
   const user = DB.users.find(x=>x.username===u && x.password===p);
   if(!user){ err.textContent='Incorrect username or password.'; return; }
   err.textContent='';
+  enterApp(user);
+  try{ localStorage.setItem(SESSION_KEY, user.username); }catch(e){ /* storage unavailable, session just won't persist */ }
+}
+function enterApp(user){
   CURRENT_USER = user;
   document.getElementById('authScreen').style.display='none';
   document.getElementById('app').classList.add('active');
@@ -473,9 +511,21 @@ async function doLogin(){
 }
 function doLogout(){
   CURRENT_USER=null;
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){ /* ignore */ }
   document.getElementById('app').classList.remove('active');
   document.getElementById('authScreen').style.display='flex';
   document.getElementById('loginUser').value=''; document.getElementById('loginPass').value='';
+  closeMobileSidebar();
+}
+// Restore a previous session after a page refresh, if one exists and the
+// account still exists on the server (in case it was deleted meanwhile).
+async function tryRestoreSession(){
+  let savedUsername;
+  try{ savedUsername = localStorage.getItem(SESSION_KEY); }catch(e){ return; }
+  if(!savedUsername) return;
+  const user = DB.users.find(x=>x.username===savedUsername);
+  if(user) enterApp(user);
+  else { try{ localStorage.removeItem(SESSION_KEY); }catch(e){} }
 }
 
 /* ============================= NAV / SHELL ============================= */
@@ -488,7 +538,15 @@ function renderNav(){
   }).join('');
   document.getElementById('sideUser').innerHTML = `<b>${CURRENT_USER.name}</b>${CURRENT_USER.username}<div class="role-pill">${ROLES[CURRENT_USER.role].label}</div>`;
 }
-function goRoute(key){ ROUTE=key; renderNav(); renderRoute(); }
+function goRoute(key){ ROUTE=key; renderNav(); renderRoute(); closeMobileSidebar(); window.scrollTo(0,0); }
+function toggleMobileSidebar(){
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('sidebarOverlay').classList.toggle('active');
+}
+function closeMobileSidebar(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarOverlay').classList.remove('active');
+}
 function renderRoute(){
   const fn = {
     dashboard:renderDashboard, search:renderSearch, clients:renderClients, clientDashboard:renderClientDashboard, requirements:renderRequirements,
@@ -1582,6 +1640,7 @@ function resetAllData(){
   checkServerStatus();
   try{
     await loadDB();
+    await tryRestoreSession();
   }catch(e){
     console.error(e);
     document.getElementById('loginError').textContent = 'Cannot reach the central server. Check the server URL below, or ask your admin to start it.';
