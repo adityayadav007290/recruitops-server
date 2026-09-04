@@ -1456,13 +1456,13 @@ function renderJoining(){
       <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(j=>{
         const s = subById(j.submissionId);
         const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
-        return {candidate:s?candName(s.candidateId):'', cid:cand.cid||'', yearsExp:cand.yearsExp!==undefined?cand.yearsExp:'', location:cand.location||'', currentCtc:cand.currentCtc||'', expectedCtc:cand.expectedCtc||'', sourcedBy:s?userName(s.recruiter):'', actualDate:j.actualDate, status:j.status};
+        return {candidate:s?candName(s.candidateId):'', cid:cand.cid||'', yearsExp:cand.yearsExp!==undefined?cand.yearsExp:'', location:cand.location||'', currentCtc:cand.currentCtc||'', expectedCtc:cand.expectedCtc||'', sourcedBy:s?userName(s.recruiter):'', submittedDate:s?(s.submittedDate||s.createdAt||''):'', selectionDate:s?(s.selectionDate||''):'', actualDate:j.actualDate, status:j.status};
       })).replace(/'/g,"&#39;")}, "joining.csv")'>Export CSV</button>
       ${canEdit? `<button class="btn btn-amber" onclick="openJoinModal()">+ Log Joining</button>`:''}
     </div>
   </div>
   <div class="card">
-    ${list.length? `<table><thead><tr><th>Candidate</th><th>CID</th><th>Exp</th><th>Location</th><th>Current CTC</th><th>Expected CTC</th><th>Requirement</th><th>Sourced By</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>CID</th><th>Exp</th><th>Location</th><th>Current CTC</th><th>Expected CTC</th><th>Requirement</th><th>Sourced By</th><th>Submitted Date</th><th>Selection Date</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(j=>{
         const s = subById(j.submissionId);
         const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
@@ -1475,6 +1475,8 @@ function renderJoining(){
           <td>${esc(cand.expectedCtc||'—')}</td>
           <td>${s?esc(reqTitle(s.requirementId)):'—'}</td>
           <td>${s?esc(userName(s.recruiter)):'—'}</td>
+          <td>${s&&(s.submittedDate||s.createdAt)? fmtDate(s.submittedDate||s.createdAt) : '—'}</td>
+          <td>${s&&s.selectionDate? fmtDate(s.selectionDate) : '—'}</td>
           <td>${fmtDate(j.actualDate)}</td>
           <td><span class="tag ${j.status==='Joined'?'tag-green':j.status==='No-show'?'tag-red':'tag-amber'}">${j.status}</span></td>
           <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openJoinModal('${j.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteJoining('${j.id}')">&#128465;</button>`:''}</td>
