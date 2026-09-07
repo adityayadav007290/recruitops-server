@@ -605,6 +605,22 @@ function agingRuler(openedDate){
   const a = agingInfo(openedDate);
   return `<div class="ruler"><div class="ruler-track"><div class="ruler-fill" style="width:${a.pct}%; background:${a.color}"></div></div><div class="ruler-days mono" style="color:${a.color}">${a.days}d</div></div>`;
 }
+// Aging between two arbitrary dates (e.g. selection date -> actual/target join date,
+// or selection date -> today if still pending). Same color thresholds as requirement aging.
+function agingInfoBetween(startDate, endDate){
+  const days = daysBetween(new Date(startDate), new Date(endDate));
+  let color, cls;
+  if(days<7){ color='var(--green)'; cls='tag-green'; }
+  else if(days<14){ color='var(--amber)'; cls='tag-amber'; }
+  else if(days<30){ color='var(--orange)'; cls='tag-orange'; }
+  else { color='var(--red)'; cls='tag-red'; }
+  const pct = Math.min(100, Math.round((Math.max(0,days)/45)*100));
+  return {days,color,cls,pct};
+}
+function agingRulerBetween(startDate, endDate){
+  const a = agingInfoBetween(startDate, endDate);
+  return `<div class="ruler"><div class="ruler-track"><div class="ruler-fill" style="width:${a.pct}%; background:${a.color}"></div></div><div class="ruler-days mono" style="color:${a.color}">${a.days}d</div></div>`;
+}
 function stageTag(stage){
   const map = {Sourced:'tag-gray', Screened:'tag-blue', Submitted:'tag-blue', Interview:'tag-amber', Offer:'tag-orange', Joined:'tag-green', Rejected:'tag-red', Dropped:'tag-red'};
   return `<span class="tag ${map[stage]||'tag-gray'}">${stage}</span>`;
@@ -1456,16 +1472,22 @@ function renderJoining(){
       <button class="btn btn-ghost" onclick='exportCSV(${JSON.stringify(list.map(j=>{
         const s = subById(j.submissionId);
         const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
-        return {candidate:s?candName(s.candidateId):'', cid:cand.cid||'', yearsExp:cand.yearsExp!==undefined?cand.yearsExp:'', location:cand.location||'', currentCtc:cand.currentCtc||'', expectedCtc:cand.expectedCtc||'', sourcedBy:s?userName(s.recruiter):'', submittedDate:s?(s.submittedDate||s.createdAt||''):'', selectionDate:s?(s.selectionDate||''):'', actualDate:j.actualDate, status:j.status};
+        const agingStart = s ? (s.selectionDate || s.submittedDate || s.createdAt || '') : '';
+        const agingEnd = j.status==='Joined' ? j.actualDate : todayIso();
+        const agingDays = agingStart ? daysBetween(new Date(agingStart), new Date(agingEnd)) : '';
+        return {candidate:s?candName(s.candidateId):'', cid:cand.cid||'', yearsExp:cand.yearsExp!==undefined?cand.yearsExp:'', location:cand.location||'', currentCtc:cand.currentCtc||'', expectedCtc:cand.expectedCtc||'', sourcedBy:s?userName(s.recruiter):'', submittedDate:s?(s.submittedDate||s.createdAt||''):'', selectionDate:s?(s.selectionDate||''):'', actualDate:j.actualDate, agingDays:agingDays, status:j.status};
       })).replace(/'/g,"&#39;")}, "joining.csv")'>Export CSV</button>
       ${canEdit? `<button class="btn btn-amber" onclick="openJoinModal()">+ Log Joining</button>`:''}
     </div>
   </div>
   <div class="card">
-    ${list.length? `<table><thead><tr><th>Candidate</th><th>CID</th><th>Exp</th><th>Location</th><th>Current CTC</th><th>Expected CTC</th><th>Requirement</th><th>Sourced By</th><th>Submitted Date</th><th>Selection Date</th><th>Joining Date</th><th>Status</th><th></th></tr></thead><tbody>
+    <div class="section-note">Aging tracks the days from selection (or submission, if not yet selected) to actual joining date once joined, or to today if still pending — helps flag candidates who are taking long to join after being selected.</div>
+    ${list.length? `<table><thead><tr><th>Candidate</th><th>CID</th><th>Exp</th><th>Location</th><th>Current CTC</th><th>Expected CTC</th><th>Requirement</th><th>Sourced By</th><th>Submitted Date</th><th>Selection Date</th><th>Joining Date</th><th>Aging</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(j=>{
         const s = subById(j.submissionId);
         const cand = s ? (DB.candidates.find(x=>x.id===s.candidateId)||{}) : {};
+        const agingStart = s ? (s.selectionDate || s.submittedDate || s.createdAt || '') : '';
+        const agingEnd = j.status==='Joined' ? j.actualDate : todayIso();
         return `<tr class="tbl-row">
           <td class="name-cell"><b>${esc(s?candName(s.candidateId):'—')}</b></td>
           <td class="mono">${esc(cand.cid||'—')}</td>
@@ -1478,6 +1500,7 @@ function renderJoining(){
           <td>${s&&(s.submittedDate||s.createdAt)? fmtDate(s.submittedDate||s.createdAt) : '—'}</td>
           <td>${s&&s.selectionDate? fmtDate(s.selectionDate) : '—'}</td>
           <td>${fmtDate(j.actualDate)}</td>
+          <td style="min-width:110px;">${agingStart? agingRulerBetween(agingStart, agingEnd) : '—'}</td>
           <td><span class="tag ${j.status==='Joined'?'tag-green':j.status==='No-show'?'tag-red':'tag-amber'}">${j.status}</span></td>
           <td class="row-actions">${canEdit?`<button class="icon-btn" onclick="openJoinModal('${j.id}')">&#9998;</button><button class="icon-btn" title="Delete" onclick="deleteJoining('${j.id}')">&#128465;</button>`:''}</td>
         </tr>`;
